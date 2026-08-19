@@ -127,7 +127,8 @@ var CONSTANTS = (function () {
             PROJECT           : 'Project',
             CLIENT            : 'Client',
             BUG_DESCRIPTION   : 'Bug_Description',
-            SUPPORT_DOCUMENTS : 'Support_Documents'
+            SUPPORT_DOCUMENTS : 'Support_Documents',
+            STATUS            : 'Status'
         },
     };
 
@@ -170,6 +171,13 @@ var CONSTANTS = (function () {
             CAPTURED : 'Captured',
             PENDING  : 'Pending',
             FAILED   : 'Not Captured'
+        },
+
+        // ── Bug Report ───────────────────────────────────────────────────────
+        BUG_REPORT: {
+            SUBMITTED         : 'Submitted',
+            REVIEWING         : 'Reviewing',
+            RESOLUTION_NEEDED : 'Resolution Needed'
         },
 
         // ── Promotion ─────────────────────────────────────────────────────────
@@ -532,6 +540,15 @@ var CONSTANTS = (function () {
     };
 
     // =========================================================================
+    // BUG REPORT STATUS → CSS CLASS MAPPING (for bug-status-badge)
+    // =========================================================================
+    var BUG_STATUS_CLASS = {
+        'Submitted'         : 'submitted',
+        'Reviewing'         : 'reviewing',
+        'Resolution Needed' : 'resolution-needed'
+    };
+
+    // =========================================================================
     // PUBLIC API — Expose all constant groups
     // =========================================================================
     return {
@@ -557,7 +574,8 @@ var CONSTANTS = (function () {
         PROJECT_COLOR_PALETTE : PROJECT_COLOR_PALETTE,
         REQ_STATUS_BADGE    : REQ_STATUS_BADGE,
         TASK_STATUS_CLASS   : TASK_STATUS_CLASS,
-        PRIORITY_CLASS      : PRIORITY_CLASS
+        PRIORITY_CLASS      : PRIORITY_CLASS,
+        BUG_STATUS_CLASS    : BUG_STATUS_CLASS
     };
 
 })();

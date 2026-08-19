@@ -18,7 +18,7 @@ var TasksModule = (function () {
     var _initialized   = false;
     var _unsubscribers = [];
 
-    var _currentTab = CONSTANTS.TASK_TABS.PENDING;
+    var _currentTab = CONSTANTS.TASK_TABS.ALL;
 
     var _filters = {
         search   : '',
@@ -382,7 +382,6 @@ var TasksModule = (function () {
         _renderSummaryCards();
         _renderTabCounts();
         _renderHoursBanner();
-        _renderFilterChips();
         _renderTaskTable();
     }
 
@@ -396,23 +395,23 @@ var TasksModule = (function () {
             clearTimeout(_searchTimer);
             var v = e.target.value;
             _searchTimer = setTimeout(function () {
-                _filters.search = v; _renderTaskTable(); _renderFilterChips();
+                _filters.search = v; _renderTaskTable();
             }, CONSTANTS.UI.DEBOUNCE_DELAY);
         });
 
         var pf = _el(CONSTANTS.DOM.PROJECT_FILTER);
         if (pf) pf.addEventListener('change', function () {
-            _filters.project = this.value; _renderTaskTable(); _renderFilterChips();
+            _filters.project = this.value; _renderTaskTable();
         });
 
         var prf = _el(CONSTANTS.DOM.PRIORITY_FILTER);
         if (prf) prf.addEventListener('change', function () {
-            _filters.priority = this.value; _renderTaskTable(); _renderFilterChips();
+            _filters.priority = this.value; _renderTaskTable();
         });
 
         var of = _el(CONSTANTS.DOM.OWNER_FILTER);
         if (of) of.addEventListener('change', function () {
-            _filters.owner = this.value; _renderTaskTable(); _renderFilterChips();
+            _filters.owner = this.value; _renderTaskTable();
         });
     }
 

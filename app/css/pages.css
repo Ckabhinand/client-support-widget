@@ -575,7 +575,7 @@
     margin-bottom: var(--s-6);
     padding: 8px;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 4px;
 }
 
@@ -1109,37 +1109,6 @@
     border-radius: var(--r-full);
 }
 
-.filter-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.filter-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text-3);
-    border-radius: var(--r-full);
-    padding: 6px 14px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all var(--t-fast);
-}
-
-.filter-chip:hover {
-    background: var(--bg);
-    color: var(--text);
-}
-
-.filter-chip.muted {
-    background: transparent;
-    color: var(--text-4);
-    cursor: default;
-}
-
 .task-panel-header {
     display: flex;
     justify-content: space-between;
@@ -1476,4 +1445,51 @@
 .task-rejection-reason {
     pointer-events: auto;
     cursor: help;
+}
+
+/* ===== CONTRACTS PAGE HIDDEN FROM CLIENT UI (backend still intact) ===== */
+#page-contracts {
+    display: none !important;
+}
+
+/* ===== BUG REPORT STATUS BADGES ===== */
+.bug-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: var(--r-full);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.bug-status-badge.submitted {
+    background: var(--bg-2);
+    color: var(--text-4);
+}
+
+.bug-status-badge.reviewing {
+    background: var(--amber-soft);
+    color: var(--amber-dark);
+}
+
+.bug-status-badge.resolution-needed {
+    background: var(--red-soft);
+    color: var(--red-dark);
+}
+
+.bug-report-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.bug-report-head h4 {
+    margin: 0;
 }

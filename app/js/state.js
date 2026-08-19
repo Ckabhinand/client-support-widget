@@ -54,7 +54,7 @@ var AppState = (function () {
 
         ui: {
             currentPage           : CONSTANTS.PAGES.DASHBOARD,
-            currentTaskTab        : CONSTANTS.TASK_TABS.PENDING,
+            currentTaskTab        : CONSTANTS.TASK_TABS.ALL,
             currentCurrency       : CONSTANTS.CURRENCY.USD,
             isLoading             : false,
             selectedTaskIds       : [],
@@ -684,7 +684,6 @@ var AppState = (function () {
             var statsStr = projectRequirements.length + ' requirement'
                 + (projectRequirements.length !== 1 ? 's' : '')
                 + ' · ' + group.totalRemaining + ' hrs remaining';
-            if (group.contracts.length > 1) statsStr += ' · ' + group.contracts.length + ' contracts';
 
             var subtitle = activeReq
                 ? 'REQ-' + activeReq.id.slice(-4).toUpperCase() + ' · ' + activeReq.subject
