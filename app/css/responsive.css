@@ -1,0 +1,314 @@
+/* ==========================================================================
+   RESPONSIVE STYLES
+   ========================================================================== */
+
+/* ===== TIMELINE SWITCHER RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .timeline-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .tl-project-bar {
+        flex-wrap: wrap;
+    }
+
+    .tl-proj-counter span:not(strong) {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .timeline-nav {
+        gap: 4px;
+        padding: 3px;
+    }
+
+    .tl-project-indicator {
+        padding: 0 4px;
+    }
+
+    .tl-proj-dots {
+        display: none;
+    }
+}
+
+/* ===== DETAIL PANEL RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .detail-panel {
+        width: 100%;
+    }
+
+    .detail-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .detail-head-content {
+        padding: 16px 20px 20px;
+    }
+
+    .detail-head-content h1 {
+        font-size: 18px;
+    }
+
+    .detail-body {
+        padding: 16px 20px;
+    }
+
+    .detail-foot {
+        padding: 12px 20px;
+    }
+}
+
+/* === Large (1100px) === */
+@media (max-width: 1100px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .dash-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .plans-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .order-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .hours-card {
+        grid-column: 1 / -1;
+    }
+    
+    .approval-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* === Tablet (900px) === */
+@media (max-width: 900px) {
+    .nav {
+        gap: 0;
+    }
+    
+    .nav-item span {
+        display: none;
+    }
+    
+    .nav-item {
+        padding: 8px 10px;
+    }
+    
+    .brand-info {
+        display: none;
+    }
+}
+
+/* === Mobile (768px) === */
+@media (max-width: 768px) {
+    :root {
+        --pad: 16px;
+    }
+    
+    .topbar-inner {
+        gap: 12px;
+    }
+    
+    .stats-grid, .dash-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .balance-strip {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .hours-banner {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+    }
+    
+    .hb-items {
+        flex-wrap: wrap;
+    }
+    
+    .alert-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .hours-card .hours-visual {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .hours-data {
+        width: 100%;
+    }
+    
+    .page-hero {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-box {
+        width: 100%;
+    }
+    
+    .toolbar-filters {
+        flex-direction: column;
+    }
+    
+    .timeline {
+        overflow-x: auto;
+        padding-bottom: 12px;
+    }
+    
+    .notif-dropdown {
+        right: 16px;
+        width: calc(100vw - 32px);
+        max-width: 360px;
+    }
+    
+    .profile-dropdown {
+        right: 16px;
+    }
+    
+    .hb-info {
+        display: none;
+    }
+    
+    .data-table thead th,
+    .data-table tbody td {
+        padding: 10px 12px;
+    }
+}
+
+/* === Small Mobile (480px) === */
+@media (max-width: 480px) {
+    .balance-strip {
+        grid-template-columns: 1fr;
+    }
+    
+    .task-item {
+        padding: 16px;
+        flex-direction: column;
+    }
+    
+    .task-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .task-actions {
+        flex-direction: column;
+    }
+    
+    .task-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .modal-head, .modal-body, .modal-foot {
+        padding: 16px 20px;
+    }
+    
+    .modal-foot {
+        flex-direction: column-reverse;
+    }
+    
+    .modal-foot .btn {
+        width: 100%;
+    }
+    
+    .toast {
+        right: 12px;
+        left: 12px;
+        min-width: 0;
+    }
+    
+    .hb-items {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+    }
+    
+    .hb-sep {
+        display: none;
+    }
+}
+
+/* ===== TASKS PAGE RESPONSIVE ===== */
+@media (max-width: 1100px) {
+    .task-compact-summary {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .tasks-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .tasks-tabs {
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .tasks-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .tasks-filters {
+        flex-wrap: wrap;
+    }
+
+    .search-box.compact {
+        width: 100%;
+    }
+
+    .form-select.compact {
+        flex: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .task-compact-summary {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .task-panel-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .task-table th,
+    .task-table td {
+        padding: 10px 8px;
+    }
+
+    .task-table-wrap {
+        overflow-x: auto;
+    }
+
+    .task-table {
+        min-width: 700px;
+    }
+
+    .tasks-tab span {
+        display: none;
+    }
+
+    .tasks-tab {
+        padding: 8px 10px;
+    }
+}

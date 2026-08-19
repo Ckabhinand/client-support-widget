@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Translation files
+app/translations/
+
+# Private certificates / keys
+cert.pem
+key.pem
+
+# Logs
+*.log
+
+# Optional: reference/design images
+css_reference_images/
+
+client support promt.txt
+
+# Package files
+package.json
+package-lock.json
+plugin-manifest.json
+server/

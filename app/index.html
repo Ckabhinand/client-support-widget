@@ -1,0 +1,1372 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Client Support Portal</title>
+
+    <script src="https://js.zohostatic.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
+
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/pages.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-mark">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"
+                fill="white"
+              />
+              <path
+                d="M9 12l2 2 4-4"
+                stroke="#2563EB"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+          <div class="brand-info">
+            <span class="brand-name">ClientHub</span>
+            <span class="brand-sub">Support Portal</span>
+          </div>
+        </div>
+
+        <nav class="nav">
+          <a href="#" class="nav-item active" data-page="dashboard">
+            <i class="fa-solid fa-grid-2"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="#" class="nav-item" data-page="purchase">
+            <i class="fa-solid fa-bag-shopping"></i>
+            <span>Buy Hours</span>
+          </a>
+          <a href="#" class="nav-item" data-page="requirements">
+            <i class="fa-solid fa-file-lines"></i>
+            <span>Requirements</span>
+          </a>
+          <a href="#" class="nav-item" data-page="tasks">
+            <i class="fa-solid fa-list-check"></i>
+            <span>Tasks</span>
+            <span class="pulse-dot"></span>
+          </a>
+          <a href="#" class="nav-item" data-page="bug-report">
+            <i class="fa-solid fa-bug"></i>
+            <span>Bug Reports</span>
+          </a>
+          <a href="#" class="nav-item" data-page="contracts">
+            <i class="fa-solid fa-file-contract"></i>
+            <span>Contracts</span>
+          </a>
+          <a href="#" class="nav-item" data-page="settings">
+            <i class="fa-solid fa-gear"></i>
+            <span>Settings</span>
+          </a>
+        </nav>
+
+        <div style="display: flex; align-items: center; gap: 8px">
+          <button class="icon-action" title="Notifications">
+            <i class="fa-solid fa-bell"></i>
+            <span class="action-dot"></span>
+          </button>
+          <div class="user-chip">
+            <div class="avatar" id="navAvatar">U</div>
+            <div class="user-meta">
+              <span class="user-name" id="navUserName">User</span>
+              <span class="user-org" id="navUserOrg">Organization</span>
+            </div>
+            <i class="fa-solid fa-chevron-down"></i>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- ===== DASHBOARD ===== -->
+      <section class="page active" id="page-dashboard">
+        <div class="alert-bar" id="alertBar" style="display: none">
+          <div class="alert-icon-box">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div class="alert-message">
+            <strong>Hours Limit Exceeded</strong>
+            <span
+              >Your task hours exceed purchased hours. Take action to
+              continue.</span
+            >
+          </div>
+          <div class="alert-buttons">
+            <button class="btn btn-ghost btn-sm" onclick="navigateTo('tasks')">
+              Review Tasks
+            </button>
+            <button
+              class="btn btn-primary btn-sm"
+              onclick="navigateTo('purchase')"
+            >
+              <i class="fa-solid fa-plus"></i> Buy Hours
+            </button>
+            <button
+              class="alert-x"
+              onclick="dismissAlert()"
+              aria-label="Dismiss"
+            >
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="page-hero">
+          <div>
+            <h1>
+              Welcome back, <span id="dashboardUserName">User</span>
+              <span class="wave">👋</span>
+            </h1>
+            <p>Here's what's happening with your support today</p>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card" id="statCard1">
+            <div class="stat-icon blue">
+              <i class="fa-solid fa-clock"></i>
+            </div>
+            <div class="stat-content">
+              <span class="stat-label">Hours Remaining</span>
+              <div class="stat-value">—<small>/—</small></div>
+              <div class="stat-trend"><span>Loading...</span></div>
+            </div>
+          </div>
+          <div class="stat-card" id="statCard2">
+            <div class="stat-icon purple">
+              <i class="fa-solid fa-file-lines"></i>
+            </div>
+            <div class="stat-content">
+              <span class="stat-label">Active Requirements</span>
+              <div class="stat-value">—</div>
+              <div class="stat-trend"><span>Loading...</span></div>
+            </div>
+          </div>
+          <div class="stat-card" id="statCard3">
+            <div class="stat-icon green">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div class="stat-content">
+              <span class="stat-label">Tasks Completed</span>
+              <div class="stat-value">—<small>/—</small></div>
+              <div class="stat-trend"><span>Loading...</span></div>
+            </div>
+          </div>
+          <div class="stat-card" id="statCard4">
+            <div class="stat-icon amber">
+              <i class="fa-solid fa-diagram-project"></i>
+            </div>
+            <div class="stat-content">
+              <span class="stat-label">Active Projects</span>
+              <div class="stat-value">—</div>
+              <div class="stat-trend"><span>Loading...</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-grid">
+          <div class="card hours-card">
+            <div class="card-head">
+              <div class="ch-title-group">
+                <h3>Support Hours</h3>
+                <span class="card-subtle" id="hoursContractRef"
+                  >Loading...</span
+                >
+              </div>
+              <span class="badge badge-success">
+                <span class="badge-dot"></span> Active
+              </span>
+            </div>
+            <div class="hours-visual">
+              <div class="donut-wrap">
+                <svg viewBox="0 0 160 160" class="donut">
+                  <circle
+                    cx="80"
+                    cy="80"
+                    r="65"
+                    fill="none"
+                    class="donut-track"
+                    stroke-width="14"
+                  />
+                  <circle
+                    cx="80"
+                    cy="80"
+                    r="65"
+                    fill="none"
+                    stroke-width="14"
+                    stroke-dasharray="408.41"
+                    stroke-dashoffset="408.41"
+                    stroke-linecap="round"
+                    transform="rotate(-90 80 80)"
+                    class="donut-fill"
+                  />
+                </svg>
+                <div class="donut-text">
+                  <div class="donut-num" id="donutNum">—</div>
+                  <div class="donut-unit">hours left</div>
+                </div>
+              </div>
+              <div class="hours-data">
+                <div class="data-row">
+                  <div class="data-marker total"></div>
+                  <span class="data-label">Total Purchased</span>
+                  <strong class="data-value" id="hoursTotal">— hrs</strong>
+                </div>
+                <div class="data-row">
+                  <div class="data-marker used"></div>
+                  <span class="data-label">Hours Used</span>
+                  <strong class="data-value" id="hoursUsed">— hrs</strong>
+                </div>
+                <div class="data-row">
+                  <div class="data-marker remaining"></div>
+                  <span class="data-label">Remaining</span>
+                  <strong class="data-value remaining" id="hoursRemaining"
+                    >— hrs</strong
+                  >
+                </div>
+                <div class="usage-progress">
+                  <div class="usage-track">
+                    <div
+                      class="usage-fill"
+                      id="usageFill"
+                      style="width: 0%"
+                    ></div>
+                  </div>
+                  <div class="usage-text">
+                    <span id="usageTextLeft">—% used</span>
+                    <span id="usageTextRight">—% remaining</span>
+                  </div>
+                </div>
+                <button
+                  class="btn btn-primary btn-block"
+                  onclick="navigateTo('purchase')"
+                >
+                  <i class="fa-solid fa-circle-plus"></i>
+                  Top Up Hours
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h3>Active Requirements</h3>
+              <button class="link-btn" onclick="navigateTo('requirements')">
+                View all <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+            <div class="item-list" id="activeReqsList">
+              <p
+                style="
+                  font-size: 12px;
+                  color: var(--text-4);
+                  text-align: center;
+                  padding: 24px 0;
+                "
+              >
+                Loading requirements...
+              </p>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h3>Task Progress</h3>
+              <button class="link-btn" onclick="navigateTo('tasks')">
+                View all <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+            <div class="progress-row">
+              <div class="mini-donut">
+                <svg viewBox="0 0 90 90">
+                  <circle
+                    cx="45"
+                    cy="45"
+                    r="38"
+                    fill="none"
+                    class="donut-track"
+                    stroke-width="9"
+                  />
+                  <circle
+                    cx="45"
+                    cy="45"
+                    r="38"
+                    fill="none"
+                    class="mini-donut-fill"
+                    stroke-width="9"
+                    stroke-dasharray="238.76"
+                    stroke-dashoffset="238.76"
+                    stroke-linecap="round"
+                    transform="rotate(-90 45 45)"
+                  />
+                </svg>
+                <div class="mini-donut-num">—%</div>
+              </div>
+              <div class="progress-stats">
+                <div class="ps-row">
+                  <span class="dot-mini green"></span>
+                  <span>Completed</span>
+                  <strong>—</strong>
+                </div>
+                <div class="ps-row">
+                  <span class="dot-mini amber"></span>
+                  <span>In Progress</span>
+                  <strong>—</strong>
+                </div>
+                <div class="ps-row">
+                  <span class="dot-mini gray"></span>
+                  <span>Pending</span>
+                  <strong>—</strong>
+                </div>
+              </div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <div class="task-mini-list" id="taskMiniList">
+              <p
+                style="
+                  font-size: 12px;
+                  color: var(--text-4);
+                  text-align: center;
+                  padding: 12px 0;
+                "
+              >
+                Loading tasks...
+              </p>
+            </div>
+          </div>
+
+          <div class="card full-span timeline-card-wrapper">
+            <div class="card-head">
+              <div class="ch-title-group">
+                <h3>Project Timeline</h3>
+                <span class="card-subtle" id="timelineSubtitle"
+                  >Loading...</span
+                >
+              </div>
+              <div class="timeline-controls">
+                <span class="badge badge-blue" id="timelinePhase">—</span>
+                <div class="timeline-nav">
+                  <button
+                    class="tl-nav-btn"
+                    onclick="DashboardModule.switchTimeline('prev')"
+                    title="Previous Project"
+                  >
+                    <i class="fa-solid fa-chevron-left"></i>
+                  </button>
+                  <div class="tl-project-indicator">
+                    <div class="tl-proj-dots" id="tlProjDots"></div>
+                    <span class="tl-proj-counter">
+                      <strong id="tlCurrentIdx">0</strong>
+                      <span>/</span>
+                      <span id="tlTotalCount">0</span>
+                    </span>
+                  </div>
+                  <button
+                    class="tl-nav-btn"
+                    onclick="DashboardModule.switchTimeline('next')"
+                    title="Next Project"
+                  >
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="tl-project-bar" id="tlProjectBar">
+              <div class="tl-proj-icon" id="tlProjIcon">
+                <i class="fa-solid fa-folder"></i>
+              </div>
+              <div class="tl-proj-meta">
+                <span class="tl-proj-name" id="tlProjName">Loading...</span>
+                <span class="tl-proj-stats" id="tlProjStats">—</span>
+              </div>
+              <span class="badge badge-success">
+                <span class="badge-dot"></span> Active
+              </span>
+            </div>
+
+            <div class="timeline" id="timelineContent">
+              <p
+                style="
+                  width: 100%;
+                  text-align: center;
+                  padding: 24px;
+                  color: var(--text-4);
+                  font-size: 13px;
+                "
+              >
+                Loading timeline...
+              </p>
+            </div>
+          </div>
+
+          <div class="card full-span">
+            <div class="card-head">
+              <h3>Recent Task Activity</h3>
+              <span class="badge badge-blue" id="approvalBadge">
+                <i class="fa-solid fa-list-check"></i> — Tasks
+              </span>
+            </div>
+            <div class="approval-grid" id="approvalGrid">
+              <p
+                style="
+                  grid-column: 1/-1;
+                  text-align: center;
+                  padding: 32px;
+                  color: var(--text-4);
+                  font-size: 13px;
+                "
+              >
+                Loading tasks...
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== PURCHASE HOURS ===== -->
+      <section class="page" id="page-purchase">
+        <div class="page-hero">
+          <div>
+            <h1>Purchase Support Hours</h1>
+            <p>Choose a plan that best fits your project requirements</p>
+          </div>
+        </div>
+
+        <div class="balance-strip">
+          <div class="bal-item">
+            <div class="bal-icon">
+              <i class="fa-solid fa-cart-shopping"></i>
+            </div>
+            <div>
+              <span class="bal-label">Total Purchased</span>
+              <span class="bal-value" id="balTotal">— hrs</span>
+            </div>
+          </div>
+          <div class="bal-item">
+            <div class="bal-icon">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+            <div>
+              <span class="bal-label">Hours Used</span>
+              <span class="bal-value" id="balUsed">— hrs</span>
+            </div>
+          </div>
+          <div class="bal-item">
+            <div class="bal-icon">
+              <i class="fa-solid fa-battery-three-quarters"></i>
+            </div>
+            <div>
+              <span class="bal-label">Hours Remaining</span>
+              <span class="bal-value success" id="balRemaining">— hrs</span>
+            </div>
+          </div>
+          <div class="bal-item">
+            <div class="bal-icon">
+              <i class="fa-solid fa-file-contract"></i>
+            </div>
+            <div>
+              <span class="bal-label">Active Contracts</span>
+              <span class="bal-value" id="balContract">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="plans-grid" id="plansGrid">
+          <p
+            style="
+              grid-column: 1/-1;
+              text-align: center;
+              padding: 64px;
+              color: var(--text-4);
+            "
+          >
+            Loading plans...
+          </p>
+        </div>
+
+        <div class="order-section" id="orderSection" style="display: none">
+          <div class="order-grid">
+            <div class="card">
+              <h3 class="card-title">
+                <i class="fa-solid fa-tag"></i>
+                Apply Discount & Currency
+              </h3>
+              <div class="form-field">
+                <label>Promotion Code</label>
+                <div class="input-action">
+                  <input
+                    type="text"
+                    id="promoInput"
+                    class="form-input"
+                    placeholder="Enter promo code..."
+                  />
+                  <button
+                    class="btn btn-primary"
+                    onclick="PricingModule.applyPromo()"
+                  >
+                    Apply
+                  </button>
+                </div>
+                <div class="field-feedback" id="promoFeedback"></div>
+              </div>
+              <div class="form-field">
+                <label>Currency</label>
+                <div class="segment-control">
+                  <button class="seg-btn active" data-currency="USD">
+                    <span class="seg-flag">🇺🇸</span> USD
+                  </button>
+                  <button class="seg-btn" data-currency="INR">
+                    <span class="seg-flag">🇮🇳</span> INR
+                  </button>
+                  <button class="seg-btn" data-currency="EUR">
+                    <span class="seg-flag">🇪🇺</span> EUR
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card summary-card">
+              <h3 class="card-title">
+                <i class="fa-solid fa-receipt"></i>
+                Order Summary
+              </h3>
+              <div class="summary-row">
+                <span>Selected Plan</span>
+                <strong id="sumPlan">—</strong>
+              </div>
+              <div class="summary-row">
+                <span>Subtotal</span>
+                <strong id="sumSub">—</strong>
+              </div>
+              <div
+                class="summary-row discount"
+                id="sumDiscountLine"
+                style="display: none"
+              >
+                <span><i class="fa-solid fa-tag"></i> Discount</span>
+                <strong id="sumDiscount">—</strong>
+              </div>
+              <div class="summary-divider"></div>
+              <div class="summary-row total">
+                <span>Total</span>
+                <strong id="sumTotal">—</strong>
+              </div>
+              <button
+                class="btn btn-primary btn-block btn-lg"
+                onclick="PricingModule.processCheckout()"
+              >
+                <i class="fa-solid fa-lock"></i>
+                Proceed to Payment
+              </button>
+              <p class="payment-secure">
+                <i class="fa-solid fa-shield-halved"></i>
+                Secured with 256-bit SSL encryption
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== REQUIREMENTS ===== -->
+      <section class="page" id="page-requirements">
+        <div class="page-hero">
+          <div>
+            <h1>My Requirements</h1>
+            <p>Submit new requests and track all your requirements</p>
+          </div>
+          <button
+            class="btn btn-primary"
+            onclick="openModal('requirementModal')"
+          >
+            <i class="fa-solid fa-plus"></i>
+            New Requirement
+          </button>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input
+              type="text"
+              id="reqSearch"
+              placeholder="Search by ID, subject, or project..."
+            />
+          </div>
+          <div class="toolbar-filters">
+            <select class="form-select" id="reqStatusFilter">
+              <option value="All Status">All Status</option>
+              <option>Submitted</option>
+              <option>Under Review</option>
+              <option>Need More Information</option>
+              <option>Waiting For Approval</option>
+              <option>Approved</option>
+              <option>In Progress</option>
+              <option>Completed</option>
+              <option>Closed</option>
+              <option>Rejected</option>
+            </select>
+            <select class="form-select" id="reqProjFilter">
+              <option value="All Projects">All Projects</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Subject</th>
+                <th>Project</th>
+                <th>Submitted</th>
+                <th>Progress</th>
+                <th>Status</th>
+                <th>Action</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="reqTableBody">
+              <tr>
+                <td
+                  colspan="7"
+                  style="
+                    text-align: center;
+                    padding: 48px;
+                    color: var(--text-4);
+                  "
+                >
+                  Loading requirements...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== TASKS ===== -->
+      <section class="page" id="page-tasks">
+        <div class="page-hero">
+          <div>
+            <h1>Tasks</h1>
+            <p>View task progress across all your projects</p>
+          </div>
+          <div class="page-hero-actions">
+            <button
+              class="btn btn-primary"
+              onclick="navigateTo('requirements')"
+            >
+              <i class="fa-solid fa-plus"></i>
+              New Requirement
+            </button>
+          </div>
+        </div>
+
+        <div class="task-compact-panel">
+          <div class="task-compact-summary">
+            <div
+              class="task-summary-card amber"
+              id="taskSummaryPending"
+              onclick="TasksModule.filterByTab('pending')"
+            >
+              <span class="summary-label">Pending</span>
+              <strong>—</strong>
+            </div>
+            <div
+              class="task-summary-card blue"
+              id="taskSummaryProgress"
+              onclick="TasksModule.filterByTab('progress')"
+            >
+              <span class="summary-label">In Progress</span>
+              <strong>—</strong>
+            </div>
+            <div
+              class="task-summary-card green"
+              id="taskSummaryCompleted"
+              onclick="TasksModule.filterByTab('completed')"
+            >
+              <span class="summary-label">Completed</span>
+              <strong>—</strong>
+            </div>
+            <div
+              class="task-summary-card purple"
+              id="taskSummaryAll"
+              onclick="TasksModule.filterByTab('all')"
+            >
+              <span class="summary-label">All</span>
+              <strong>—</strong>
+            </div>
+          </div>
+
+          <div class="tasks-toolbar">
+            <div class="tasks-tabs">
+              <button
+                class="tasks-tab active"
+                data-tab="pending"
+                onclick="TasksModule.filterByTab('pending')"
+              >
+                <span>Pending</span>
+                <span class="tab-count">—</span>
+              </button>
+              <button
+                class="tasks-tab"
+                data-tab="progress"
+                onclick="TasksModule.filterByTab('progress')"
+              >
+                <span>In Progress</span>
+                <span class="tab-count">—</span>
+              </button>
+              <button
+                class="tasks-tab"
+                data-tab="completed"
+                onclick="TasksModule.filterByTab('completed')"
+              >
+                <span>Completed</span>
+                <span class="tab-count">—</span>
+              </button>
+              <button
+                class="tasks-tab"
+                data-tab="all"
+                onclick="TasksModule.filterByTab('all')"
+              >
+                <span>All</span>
+                <span class="tab-count">—</span>
+              </button>
+            </div>
+
+            <div class="tasks-filters">
+              <div class="search-box compact">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input
+                  type="text"
+                  placeholder="Search tasks..."
+                  id="taskSearch"
+                />
+              </div>
+              <select class="form-select compact" id="projectFilter">
+                <option value="all">All Projects</option>
+              </select>
+              <select class="form-select compact" id="priorityFilter">
+                <option value="all">All Priorities</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+              <select class="form-select compact" id="ownerFilter">
+                <option value="all">All Owners</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="filter-chips" id="activeFilterChips">
+            <span class="filter-chip muted">All Tasks</span>
+          </div>
+        </div>
+
+        <div class="hours-banner">
+          <div class="hb-items">
+            <div class="hb-item">
+              <div class="hb-stat-icon blue">
+                <i class="fa-solid fa-clock"></i>
+              </div>
+              <div>
+                <span class="hb-label">Contracted</span>
+                <span class="hb-value">—</span>
+              </div>
+            </div>
+            <div class="hb-sep"></div>
+            <div class="hb-item">
+              <div class="hb-stat-icon amber">
+                <i class="fa-solid fa-bolt"></i>
+              </div>
+              <div>
+                <span class="hb-label">Used</span>
+                <span class="hb-value">—</span>
+              </div>
+            </div>
+            <div class="hb-sep"></div>
+            <div class="hb-item">
+              <div class="hb-stat-icon red">
+                <i class="fa-solid fa-battery-quarter"></i>
+              </div>
+              <div>
+                <span class="hb-label">Remaining</span>
+                <span class="hb-value">—</span>
+              </div>
+            </div>
+          </div>
+          <div class="hb-actions">
+            <button
+              class="btn btn-primary btn-sm"
+              onclick="navigateTo('purchase')"
+            >
+              <i class="fa-solid fa-plus"></i> Buy Hours
+            </button>
+          </div>
+        </div>
+
+        <div class="task-section" id="section-pending">
+          <div class="task-panel-header">
+            <div>
+              <h3>Pending Tasks</h3>
+              <span>— tasks awaiting team review</span>
+            </div>
+          </div>
+
+          <div class="task-table-wrap">
+            <table class="task-table">
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th>Project</th>
+                  <th>Priority</th>
+                  <th>Owner</th>
+                  <th>Hours</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td
+                    colspan="6"
+                    style="
+                      text-align: center;
+                      padding: 48px;
+                      color: var(--text-4);
+                    "
+                  >
+                    Loading tasks...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="task-section" id="section-progress" style="display: none">
+          <div class="task-panel-header">
+            <div>
+              <h3>In Progress</h3>
+              <span>— active tasks</span>
+            </div>
+          </div>
+          <div class="task-table-wrap">
+            <table class="task-table">
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th>Project</th>
+                  <th>Priority</th>
+                  <th>Owner</th>
+                  <th>Progress</th>
+                  <th>Due</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td
+                    colspan="7"
+                    style="
+                      text-align: center;
+                      padding: 48px;
+                      color: var(--text-4);
+                    "
+                  >
+                    Loading tasks...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="task-section" id="section-completed" style="display: none">
+          <div class="task-panel-header">
+            <div>
+              <h3>Completed</h3>
+              <span>— completed tasks</span>
+            </div>
+          </div>
+          <div class="task-table-wrap">
+            <table class="task-table">
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th>Project</th>
+                  <th>Priority</th>
+                  <th>Owner</th>
+                  <th>Completed</th>
+                  <th>Hours</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td
+                    colspan="7"
+                    style="
+                      text-align: center;
+                      padding: 48px;
+                      color: var(--text-4);
+                    "
+                  >
+                    Loading tasks...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="task-section" id="section-all" style="display: none">
+          <div class="task-panel-header">
+            <div>
+              <h3>All Tasks</h3>
+              <span>Complete overview</span>
+            </div>
+          </div>
+          <div class="task-table-wrap">
+            <table class="task-table">
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th>Project</th>
+                  <th>Priority</th>
+                  <th>Owner</th>
+                  <th>Status</th>
+                  <th>Hours</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td
+                    colspan="6"
+                    style="
+                      text-align: center;
+                      padding: 48px;
+                      color: var(--text-4);
+                    "
+                  >
+                    Loading tasks...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="empty-state" id="emptyState" style="display: none">
+          <div style="text-align: center; padding: 48px 20px">
+            <i
+              class="fa-solid fa-folder-open"
+              style="
+                font-size: 36px;
+                opacity: 0.2;
+                margin-bottom: 14px;
+                display: block;
+                color: var(--text-4);
+              "
+            ></i>
+            <h3 style="font-size: 14px; color: var(--text); margin-bottom: 6px">
+              No tasks found
+            </h3>
+            <p style="font-size: 13px; color: var(--text-4)">
+              Try adjusting your filters or search terms
+            </p>
+            <br />
+            <button
+              class="btn btn-outline"
+              onclick="TasksModule.resetFilters()"
+            >
+              <i class="fa-solid fa-rotate-left"></i> Reset Filters
+            </button>
+          </div>
+        </div>
+      </section>
+      <!-- ===== BUG REPORTS ===== -->
+      <section class="page" id="page-bug-report">
+        <div class="page-hero">
+          <div>
+            <h1>Bug Reports</h1>
+            <p>Submit and track issues related to your support contracts</p>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('bugReportModal')">
+            <i class="fa-solid fa-bug"></i>
+            New Bug Report
+          </button>
+        </div>
+
+        <div class="card table-card">
+          <div class="card-head">
+            <div class="ch-title-group">
+              <h3>Submitted Bug Reports</h3>
+              <span class="card-subtle">Your reported issues</span>
+            </div>
+          </div>
+          <div id="bugReportsList">
+            <p
+              style="
+                text-align: center;
+                padding: 48px;
+                color: var(--text-4);
+                font-size: 13px;
+              "
+            >
+              Loading bug reports...
+            </p>
+          </div>
+        </div>
+      </section>
+      <!-- ===== CONTRACTS ===== -->
+      <section class="page" id="page-contracts">
+        <div class="page-hero">
+          <div>
+            <h1>Support Contracts</h1>
+            <p>View your active and past support contracts</p>
+          </div>
+        </div>
+
+        <div class="contracts-grid" id="contractsGrid">
+          <p
+            style="
+              grid-column: 1/-1;
+              text-align: center;
+              padding: 64px;
+              color: var(--text-4);
+            "
+          >
+            Loading contracts...
+          </p>
+        </div>
+      </section>
+
+      <!-- ===== SETTINGS ===== -->
+      <section class="page" id="page-settings">
+        <div class="page-hero">
+          <div>
+            <h1>Settings</h1>
+            <p>Manage your account and preferences</p>
+          </div>
+        </div>
+
+        <div class="settings-grid">
+          <div class="card">
+            <h3 class="card-title">
+              <i class="fa-solid fa-user"></i>
+              Profile Information
+            </h3>
+            <div class="form-field">
+              <label>Full Name</label>
+              <input
+                type="text"
+                id="settingsName"
+                class="form-input"
+                value=""
+                placeholder="Loading..."
+              />
+            </div>
+            <div class="form-field">
+              <label>Email Address</label>
+              <input
+                type="email"
+                id="settingsEmail"
+                class="form-input"
+                value=""
+                disabled
+              />
+              <span class="field-hint">Email cannot be changed</span>
+            </div>
+            <div class="form-field">
+              <label>Company</label>
+              <input
+                type="text"
+                id="settingsCompany"
+                class="form-input"
+                value=""
+                disabled
+              />
+            </div>
+            <button class="btn btn-primary">Save Changes</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ============ REQUIREMENT MODAL ============ -->
+    <div class="modal-backdrop" id="requirementModal">
+      <div class="modal">
+        <div class="modal-head">
+          <div>
+            <h2>New Requirement</h2>
+            <p>Tell us what you need help with</p>
+          </div>
+          <button class="modal-x" onclick="closeModal('requirementModal')">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-field">
+            <label>Project <span class="req-star">*</span></label>
+            <select class="form-input" id="reqModalProject">
+              <option value="">Select a project...</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Subject <span class="req-star">*</span></label>
+            <input
+              type="text"
+              id="reqModalSubject"
+              class="form-input"
+              placeholder="Brief title for your requirement"
+            />
+          </div>
+          <div class="form-field">
+            <label>Description <span class="req-star">*</span></label>
+            <textarea
+              id="reqModalDetails"
+              class="form-input"
+              rows="4"
+              placeholder="Provide detailed information..."
+            ></textarea>
+          </div>
+          <div class="form-field">
+            <label>Attachments (Optional)</label>
+            <div
+              class="file-drop"
+              onclick="document.getElementById('reqModalFileInput').click()"
+            >
+              <input
+                type="file"
+                id="reqModalFileInput"
+                multiple
+                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif"
+                style="display: none"
+                onchange="RequirementsModule.onFilesSelected(this.files)"
+              />
+              <div class="file-drop-icon">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+              </div>
+              <p id="fileDropText">
+                Click here or <span>browse to upload</span>
+              </p>
+              <small>Max 10 files · PDF, DOC, PNG, JPG</small>
+            </div>
+            <div id="fileList" style="margin-top: 8px"></div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button
+            class="btn btn-outline"
+            onclick="closeModal('requirementModal')"
+          >
+            Cancel
+          </button>
+          <button
+            class="btn btn-primary"
+            id="reqModalSubmitBtn"
+            onclick="RequirementsModule.submitRequirement()"
+          >
+            <i class="fa-solid fa-paper-plane"></i> Submit Requirement
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- ============ REJECTION MODAL ============ -->
+    <div class="modal-backdrop" id="rejectionModal">
+      <div class="modal">
+        <div class="modal-head">
+          <div>
+            <h2>Reject Task</h2>
+            <p id="rejectionTaskInfo">Please provide a rejection reason.</p>
+          </div>
+          <button class="modal-x" onclick="TasksModule.closeRejectModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-field">
+            <label>
+              Rejection Reason
+              <span class="req-star">*</span>
+            </label>
+            <textarea
+              id="rejectionReason"
+              class="form-input"
+              rows="5"
+              placeholder="Please explain why you are rejecting this task so the team can address it..."
+            ></textarea>
+            <span class="field-hint">
+              Your feedback helps the team understand what needs to change.
+            </span>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button
+            class="btn btn-outline"
+            onclick="TasksModule.closeRejectModal()"
+          >
+            Cancel
+          </button>
+          <button class="btn btn-primary" onclick="TasksModule.submitReject()">
+            <i class="fa-solid fa-ban"></i>
+            Submit Rejection
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- ============ BUG REPORT MODAL ============ -->
+    <div class="modal-backdrop" id="bugReportModal">
+      <div class="modal">
+        <div class="modal-head">
+          <div>
+            <h2>New Bug Report</h2>
+            <p>Describe the issue you have encountered</p>
+          </div>
+          <button class="modal-x" onclick="closeModal('bugReportModal')">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-field">
+            <label>
+              Support Contract
+              <span class="req-star">*</span>
+            </label>
+            <select class="form-input" id="bugContract">
+              <option value="">Select a support contract...</option>
+            </select>
+            <span class="field-hint">
+              Project and Client will be linked automatically.
+            </span>
+          </div>
+
+          <!-- Auto-filled info display -->
+          <div
+            class="bug-auto-info"
+            style="
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+              margin-bottom: 20px;
+            "
+          >
+            <div id="bugProjectInfo" class="bug-info-line"></div>
+            <div id="bugClientInfo" class="bug-info-line"></div>
+          </div>
+
+          <div class="form-field">
+            <label>
+              Bug Description
+              <span class="req-star">*</span>
+            </label>
+            <textarea
+              id="bugDescription"
+              class="form-input"
+              rows="5"
+              placeholder="Describe the bug in detail — what happened, what you expected, and steps to reproduce..."
+            ></textarea>
+          </div>
+
+          <div class="form-field">
+            <label>
+              Supporting Documents
+              <span style="color: var(--text-4); font-weight: 400"
+                >(Optional)</span
+              >
+            </label>
+            <div
+              class="file-drop"
+              onclick="document.getElementById('bugFileInput').click()"
+            >
+              <input
+                type="file"
+                id="bugFileInput"
+                multiple
+                style="display: none"
+                onchange="BugReportModule.onFilesSelected(this.files)"
+              />
+              <div class="file-drop-icon">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+              </div>
+              <p>Click here or <span>browse to upload</span></p>
+              <small>Screenshots, logs, or related files</small>
+            </div>
+            <div id="bugFileList" style="margin-top: 8px"></div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button
+            class="btn btn-outline"
+            onclick="closeModal('bugReportModal')"
+          >
+            Cancel
+          </button>
+          <button class="btn btn-primary" onclick="BugReportModule.submit()">
+            <i class="fa-solid fa-paper-plane"></i>
+            Submit Bug Report
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- ============ TOAST ============ -->
+    <div class="toast" id="toast">
+      <div class="toast-icon">
+        <i class="fa-solid fa-check"></i>
+      </div>
+      <div class="toast-content">
+        <strong id="toastTitle">Success</strong>
+        <span id="toastMsg">Action completed successfully</span>
+      </div>
+      <button class="toast-x" onclick="hideToast()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="js/constants.js"></script>
+    <script src="js/logger.js"></script>
+    <script src="js/cache.js"></script>
+    <script src="js/sdk-service.js"></script>
+    <script src="js/repositories/contract.repo.js"></script>
+    <script src="js/repositories/requirement.repo.js"></script>
+    <script src="js/repositories/task.repo.js"></script>
+    <script src="js/repositories/pricing.repo.js"></script>
+    <script src="js/repositories/promotion.repo.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/error-handler.js"></script>
+    <script src="js/optimizer.js"></script>
+    <script src="js/navigation.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/requirements.js"></script>
+    <script src="js/tasks.js"></script>
+    <script src="js/contracts.js"></script>
+    <script src="js/pricing.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/repositories/bug-report.repo.js"></script>
+    <script src="js/bug-report.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/geolocation.js"></script>
+  </body>
+</html>
