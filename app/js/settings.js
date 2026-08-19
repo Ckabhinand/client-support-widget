@@ -312,7 +312,6 @@ var SettingsModule = (function () {
     function _renderAccountSummary() {
         var contractsState = AppState.get('contracts');
         var summary        = contractsState.hoursSummary;
-        var activeCount    = contractsState.active.length;
         var user           = AppState.get('user');
 
         // Find or create the account summary card
@@ -340,7 +339,7 @@ var SettingsModule = (function () {
             '<div class="setting-row">',
             '  <div>',
             '    <h5>Total Hours Purchased</h5>',
-            '    <p>Across all active contracts</p>',
+            '    <p>Across all active support plans</p>',
             '  </div>',
             '  <strong style="font-size:18px;font-weight:800;',
             '    color:var(--text);letter-spacing:-0.02em">',
@@ -351,7 +350,7 @@ var SettingsModule = (function () {
             '<div class="setting-row">',
             '  <div>',
             '    <h5>Hours Used</h5>',
-            '    <p>Total consumed across contracts</p>',
+            '    <p>Total consumed across support plans</p>',
             '  </div>',
             '  <strong style="font-size:18px;font-weight:800;',
             '    color:var(--text-3);letter-spacing:-0.02em">',
@@ -376,17 +375,6 @@ var SettingsModule = (function () {
             '  </strong>',
             '</div>',
 
-            '<div class="setting-row">',
-            '  <div>',
-            '    <h5>Active Contracts</h5>',
-            '    <p>Currently active support plans</p>',
-            '  </div>',
-            '  <strong style="font-size:18px;font-weight:800;',
-            '    color:var(--primary);letter-spacing:-0.02em">',
-            '    ' + activeCount,
-            '  </strong>',
-            '</div>',
-
             // ── Logged in as ──
             '<div style="margin-top:16px;padding:12px 14px;',
             'background:var(--bg);border-radius:var(--r);',
@@ -406,9 +394,9 @@ var SettingsModule = (function () {
             '<div style="margin-top:16px;display:flex;gap:8px">',
             '  <button class="btn btn-outline btn-sm" ',
             '    onclick="navigateTo(\''
-                     + CONSTANTS.PAGES.CONTRACTS + '\')">',
-            '    <i class="fa-solid fa-file-contract"></i>',
-            '    View Contracts',
+                     + CONSTANTS.PAGES.DASHBOARD + '\')">',
+            '    <i class="fa-solid fa-gauge-high"></i>',
+            '    Dashboard',
             '  </button>',
             '  <button class="btn btn-primary btn-sm" ',
             '    onclick="navigateTo(\''

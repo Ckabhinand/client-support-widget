@@ -2,11 +2,15 @@
    BUG-REPORT.JS — Bug Report Page Module
 
    Responsibilities:
-   - Render bug report list (shows Project + Client + Contract)
-   - Populate support contract dropdown in modal
-   - Auto-fill Project and Client from selected contract
+   - Render bug report list (shows Project + Client + status badge)
+   - Populate Project dropdown in modal (deduplicated from active contracts)
+   - Auto-fill Client from the contract linked to the selected project
+   - Set initial bug status to "Submitted"
    - Handle bug report submission
    - Handle file selection display
+
+   Note: The underlying Support_Contract linkage is preserved for the
+   backend but is not exposed to the client-facing UI.
 
    Uses:
    - BugReportRepo (data access)
@@ -41,7 +45,8 @@ var BugReportModule = (function () {
     }
 
     // =========================================================================
-    // Populate Support Contract Dropdown
+    // Populate Project Dropdown
+    // (Values are contract IDs behind the scenes — hidden from the client)
     // =========================================================================
 
     function _populateContracts() {
@@ -51,17 +56,27 @@ var BugReportModule = (function () {
         var contracts = AppState.get('contracts').active || [];
 
         if (contracts.length === 0) {
-            select.innerHTML = '<option value="">No active contracts found</option>';
+            select.innerHTML = '<option value="">No projects found</option>';
             _clearProjectClientInfo();
             Logger.warn('BUG', '_populateContracts → no active contracts');
             return;
         }
 
-        select.innerHTML = '<option value="">Select a support contract...</option>'
-            + contracts.map(function (c) {
-                var label = (c.projectDisplay || 'Project')
-                    + ' — '
-                    + (c.planDisplay || ('SC-' + c.id.slice(-6)));
+        // Deduplicate by projectDisplay — user picks a PROJECT, the first
+        // active contract for that project is used for the backend payload.
+        var seen = {};
+        var projects = [];
+        contracts.forEach(function (c) {
+            var key = c.projectDisplay || c.projectId || c.id;
+            if (!seen[key]) {
+                seen[key] = true;
+                projects.push(c);
+            }
+        });
+
+        select.innerHTML = '<option value="">Select a project...</option>'
+            + projects.map(function (c) {
+                var label = c.projectDisplay || 'Project';
                 return '<option value="' + _escapeHtml(c.id) + '">'
                     + _escapeHtml(label)
                     + '</option>';
@@ -70,7 +85,7 @@ var BugReportModule = (function () {
         _clearProjectClientInfo();
 
         Logger.debug('BUG', '_populateContracts → '
-            + contracts.length + ' contracts loaded');
+            + projects.length + ' projects loaded');
     }
 
     // =========================================================================
@@ -175,16 +190,16 @@ var BugReportModule = (function () {
                         '    <i class="fa-solid fa-bug"></i>',
                         '  </div>',
                         '  <div class="row-content">',
-                        '    <h4>' + _escapeHtml(item.displayId) + '</h4>',
+                        '    <div class="bug-report-head">',
+                        '      <h4>' + _escapeHtml(item.displayId) + '</h4>',
+                        '      <span class="bug-status-badge ' + _escapeHtml(item.statusClass) + '">' + _escapeHtml(item.status) + '</span>',
+                        '    </div>',
                         '    <div class="bug-meta-row">',
                         '      <span class="bug-meta-tag">',
                         '        <i class="fa-solid fa-folder"></i> ' + _escapeHtml(item.projectDisplay || '—'),
                         '      </span>',
                         '      <span class="bug-meta-tag">',
                         '        <i class="fa-solid fa-building"></i> ' + _escapeHtml(item.clientDisplay || '—'),
-                        '      </span>',
-                        '      <span class="bug-meta-tag">',
-                        '        <i class="fa-solid fa-file-contract"></i> ' + _escapeHtml(item.contractDisplay || '—'),
                         '      </span>',
                         '    </div>',
                         '    <p class="bug-description">' + _escapeHtml(item.description) + '</p>',
@@ -237,7 +252,9 @@ var BugReportModule = (function () {
 
     /**
      * Validate and submit the bug report.
-     * Automatically includes Project ID and Client ID from selected contract.
+     * Automatically includes Project ID, Client ID, and the linked
+     * Support Contract ID (resolved from the selected project) in the payload.
+     * Initial Status is set to "Submitted".
      */
     async function submit() {
         var contractEl    = _el(CONSTANTS.DOM.BUG_CONTRACT);
@@ -249,7 +266,7 @@ var BugReportModule = (function () {
 
         // ── Validation ──
         if (!contractId) {
-            showToast('Required Field', 'Please select a support contract.');
+            showToast('Required Field', 'Please select a project.');
             if (contractEl) contractEl.focus();
             return;
         }
@@ -265,7 +282,7 @@ var BugReportModule = (function () {
         var contract  = contracts.find(function (c) { return c.id === contractId; });
 
         if (!contract) {
-            showToast('Error', 'Selected contract not found. Please try again.');
+            showToast('Error', 'Selected project not found. Please try again.');
             return;
         }
 
@@ -285,6 +302,8 @@ var BugReportModule = (function () {
         payload[CONSTANTS.FIELDS.BUG_REPORT.PROJECT]          = projectId;
         payload[CONSTANTS.FIELDS.BUG_REPORT.CLIENT]           = clientId;
         payload[CONSTANTS.FIELDS.BUG_REPORT.BUG_DESCRIPTION]  = description;
+        payload[CONSTANTS.FIELDS.BUG_REPORT.STATUS] =
+            CONSTANTS.STATUS.BUG_REPORT.SUBMITTED;
 
         Logger.info('BUG', 'submit → payload', payload);
 

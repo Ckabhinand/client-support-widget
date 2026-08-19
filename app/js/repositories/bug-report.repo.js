@@ -33,13 +33,18 @@ var BugReportRepo = (function () {
      *   projectDisplay  : string,
      *   clientId        : string,
      *   clientDisplay   : string,
-     *   description     : string
+     *   description     : string,
+     *   status          : string,
+     *   statusClass     : string
      * }
      */
     function _toDTO(record, index) {
         if (!record) return null;
 
         var id = H.getString(record, 'ID', '');
+        var status = H.getString(
+            record, F.STATUS, CONSTANTS.STATUS.BUG_REPORT.SUBMITTED
+        );
 
         return {
             id              : id,
@@ -52,7 +57,9 @@ var BugReportRepo = (function () {
             projectDisplay  : H.getLookupDisplay(record, F.PROJECT),
             clientId        : H.getLookupId(record, F.CLIENT),
             clientDisplay   : H.getLookupDisplay(record, F.CLIENT),
-            description     : H.getString(record, F.BUG_DESCRIPTION, '')
+            description     : H.getString(record, F.BUG_DESCRIPTION, ''),
+            status          : status,
+            statusClass     : CONSTANTS.BUG_STATUS_CLASS[status] || 'submitted'
         };
     }
 

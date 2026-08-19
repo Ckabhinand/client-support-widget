@@ -70,10 +70,6 @@
             <i class="fa-solid fa-bug"></i>
             <span>Bug Reports</span>
           </a>
-          <a href="#" class="nav-item" data-page="contracts">
-            <i class="fa-solid fa-file-contract"></i>
-            <span>Contracts</span>
-          </a>
           <a href="#" class="nav-item" data-page="settings">
             <i class="fa-solid fa-gear"></i>
             <span>Settings</span>
@@ -189,7 +185,10 @@
             <div class="card-head">
               <div class="ch-title-group">
                 <h3>Support Hours</h3>
-                <span class="card-subtle" id="hoursContractRef"
+                <span
+                  class="card-subtle"
+                  id="hoursContractRef"
+                  style="display: none"
                   >Loading...</span
                 >
               </div>
@@ -481,15 +480,6 @@
               <span class="bal-value success" id="balRemaining">— hrs</span>
             </div>
           </div>
-          <div class="bal-item">
-            <div class="bal-icon">
-              <i class="fa-solid fa-file-contract"></i>
-            </div>
-            <div>
-              <span class="bal-label">Active Contracts</span>
-              <span class="bal-value" id="balContract">—</span>
-            </div>
-          </div>
         </div>
 
         <div class="plans-grid" id="plansGrid">
@@ -721,7 +711,7 @@
           <div class="tasks-toolbar">
             <div class="tasks-tabs">
               <button
-                class="tasks-tab active"
+                class="tasks-tab"
                 data-tab="pending"
                 onclick="TasksModule.filterByTab('pending')"
               >
@@ -745,7 +735,7 @@
                 <span class="tab-count">—</span>
               </button>
               <button
-                class="tasks-tab"
+                class="tasks-tab active"
                 data-tab="all"
                 onclick="TasksModule.filterByTab('all')"
               >
@@ -777,10 +767,6 @@
               </select>
             </div>
           </div>
-
-          <div class="filter-chips" id="activeFilterChips">
-            <span class="filter-chip muted">All Tasks</span>
-          </div>
         </div>
 
         <div class="hours-banner">
@@ -790,7 +776,7 @@
                 <i class="fa-solid fa-clock"></i>
               </div>
               <div>
-                <span class="hb-label">Contracted</span>
+                <span class="hb-label">Purchased</span>
                 <span class="hb-value">—</span>
               </div>
             </div>
@@ -825,7 +811,7 @@
           </div>
         </div>
 
-        <div class="task-section" id="section-pending">
+        <div class="task-section" id="section-pending" style="display: none">
           <div class="task-panel-header">
             <div>
               <h3>Pending Tasks</h3>
@@ -939,7 +925,7 @@
           </div>
         </div>
 
-        <div class="task-section" id="section-all" style="display: none">
+        <div class="task-section" id="section-all">
           <div class="task-panel-header">
             <div>
               <h3>All Tasks</h3>
@@ -1009,7 +995,7 @@
         <div class="page-hero">
           <div>
             <h1>Bug Reports</h1>
-            <p>Submit and track issues related to your support contracts</p>
+            <p>Submit and track issues related to your projects</p>
           </div>
           <button class="btn btn-primary" onclick="openModal('bugReportModal')">
             <i class="fa-solid fa-bug"></i>
@@ -1250,14 +1236,14 @@
         <div class="modal-body">
           <div class="form-field">
             <label>
-              Support Contract
+              Project
               <span class="req-star">*</span>
             </label>
             <select class="form-input" id="bugContract">
-              <option value="">Select a support contract...</option>
+              <option value="">Select a project...</option>
             </select>
             <span class="field-hint">
-              Project and Client will be linked automatically.
+              Client will be linked automatically.
             </span>
           </div>
 
@@ -1271,7 +1257,11 @@
               margin-bottom: 20px;
             "
           >
-            <div id="bugProjectInfo" class="bug-info-line"></div>
+            <div
+              id="bugProjectInfo"
+              class="bug-info-line"
+              style="display: none"
+            ></div>
             <div id="bugClientInfo" class="bug-info-line"></div>
           </div>
 

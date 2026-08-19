@@ -587,7 +587,7 @@ var PricingModule = (function () {
           "padding:12px 14px;border-radius:var(--r);margin-top:14px;",
           'font-size:12px;color:var(--primary-dark);line-height:1.5">',
           '  <i class="fa-solid fa-circle-info" style="margin-right:6px"></i>',
-          "  <strong>Updating existing contract</strong> for ",
+          "  <strong>Adding hours to your existing plan</strong> for ",
           _escapeHtml(existing.projectDisplay) + ". Hours: ",
           "<strong>" +
             existing.purchasedHours +
@@ -602,7 +602,7 @@ var PricingModule = (function () {
           "padding:12px 14px;border-radius:var(--r);margin-top:14px;",
           'font-size:12px;color:var(--green-dark);line-height:1.5">',
           '  <i class="fa-solid fa-circle-check" style="margin-right:6px"></i>',
-          "  <strong>New contract</strong> will be created for ",
+          "  <strong>A new support plan</strong> will be created for ",
           _escapeHtml(activeContract.projectDisplay) + ".",
           "</div>",
         ].join("");
@@ -868,14 +868,14 @@ var PricingModule = (function () {
           });
 
         setTimeout(function () {
-          navigateTo(CONSTANTS.PAGES.CONTRACTS);
+            navigateTo(CONSTANTS.PAGES.DASHBOARD);
         }, 1500);
       } else {
         Logger.warn("PRICING", "Payment not captured in time");
 
         showToast(
           "Payment Status Unknown",
-          "We could not confirm your payment. Check the Contracts page in a few minutes.",
+          "We could not confirm your payment. Your hours will appear shortly.",
         );
       }
     } catch (err) {
@@ -1066,11 +1066,11 @@ var PricingModule = (function () {
 
     showToast(
       "Payment Pending",
-      "Your contract is created. Check the Contracts page once payment is complete.",
+      "Your order is created. Your hours will appear once payment is complete.",
     );
 
     setTimeout(function () {
-      navigateTo(CONSTANTS.PAGES.CONTRACTS);
+      navigateTo(CONSTANTS.PAGES.DASHBOARD);
     }, 1000);
   }
 

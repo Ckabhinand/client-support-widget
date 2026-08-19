@@ -232,11 +232,11 @@ var DashboardModule = (function () {
         trendIcon = "fa-arrow-trend-up";
       } else {
         trendText =
-          activeContracts +
-          " active contract" +
-          (activeContracts !== 1 ? "s" : "");
+          projectCount +
+          " active project" +
+          (projectCount !== 1 ? "s" : "");
         trendClass = "";
-        trendIcon = "fa-file-contract";
+        trendIcon = "fa-diagram-project";
       }
 
       stat4.innerHTML = [
