@@ -16,7 +16,14 @@ var PricingModule = (function () {
 
   var _selectedPlan = null; // PricingDTO
   var _currentCurrency = CONSTANTS.CURRENCY.USD;
+  var _currentType = CONSTANTS.STATUS.CONTRACT_TYPE.SUPPORT; // Support | Implementation
   var _appliedPromo = null; // Result from PromotionRepo.validateCode()
+
+  function _typeLabel() {
+    return _currentType === CONSTANTS.STATUS.CONTRACT_TYPE.IMPLEMENTATION
+      ? "Implementation"
+      : "Support";
+  }
 
   // =========================================================================
   // DOM Helpers
@@ -97,10 +104,17 @@ var PricingModule = (function () {
 
   function _renderBalanceStrip() {
     var summary = AppState.get("contracts").hoursSummary;
-    var purchased = summary.totalPurchased || 0;
-    var consumed = summary.totalConsumed || 0;
-    var remaining = summary.totalRemaining || 0;
-    var activeCount = summary.activeCount || 0;
+    var typeSummary =
+      _currentType === CONSTANTS.STATUS.CONTRACT_TYPE.IMPLEMENTATION
+        ? summary.implementation
+        : summary.support;
+
+    // Fallback for older state shapes
+    if (!typeSummary) typeSummary = summary;
+
+    var purchased = typeSummary.totalPurchased || 0;
+    var consumed = typeSummary.totalConsumed || 0;
+    var remaining = typeSummary.totalRemaining || 0;
 
     var balTotal = _el("balTotal");
     if (balTotal) balTotal.textContent = purchased + " hrs";
@@ -119,22 +133,6 @@ var PricingModule = (function () {
             ? "warning"
             : "success");
     }
-
-    var balContract = _el("balContract");
-    if (balContract) {
-      if (activeCount === 0) {
-        balContract.textContent = "None";
-        balContract.className = "bal-value";
-      } else if (activeCount === 1) {
-        var firstContract = summary.contracts[0];
-        balContract.textContent =
-          firstContract.planDisplay || "SC-" + firstContract.id.slice(-6);
-        balContract.className = "bal-value mono";
-      } else {
-        balContract.textContent = activeCount + " contracts";
-        balContract.className = "bal-value";
-      }
-    }
   }
 
   // =========================================================================
@@ -148,9 +146,12 @@ var PricingModule = (function () {
 
     if (!container) return;
 
-    // ── FILTER by currency (location-based) ──
+    // ── FILTER by currency (location-based) AND contract type ──
     var filteredPlans = allPlans.filter(function (p) {
-      return p.currency === _currentCurrency;
+      return (
+        p.currency === _currentCurrency &&
+        (p.priceType || CONSTANTS.STATUS.CONTRACT_TYPE.SUPPORT) === _currentType
+      );
     });
 
     // Fallback to USD if no plans in detected currency
@@ -158,11 +159,17 @@ var PricingModule = (function () {
       Logger.warn("PRICING", "No plans in " + _currentCurrency + " — falling back to USD");
       _currentCurrency = CONSTANTS.CURRENCY.USD;
       filteredPlans = allPlans.filter(function (p) {
-        return p.currency === CONSTANTS.CURRENCY.USD;
+        return (
+          p.currency === CONSTANTS.CURRENCY.USD &&
+          (p.priceType || CONSTANTS.STATUS.CONTRACT_TYPE.SUPPORT) === _currentType
+        );
       });
     }
 
-    Logger.debug("PRICING", "Showing " + filteredPlans.length + " " + _currentCurrency + " plans");
+    Logger.debug(
+      "PRICING",
+      "Showing " + filteredPlans.length + " " + _currentCurrency + " " + _currentType + " plans",
+    );
 
     if (filteredPlans.length === 0) {
       container.innerHTML = [
@@ -170,7 +177,7 @@ var PricingModule = (function () {
         '  <i class="fa-solid fa-tag" style="font-size:48px;opacity:0.15;',
         '    margin-bottom:16px;display:block;color:var(--text-4)"></i>',
         '  <strong style="display:block;font-size:16px;color:var(--text);margin-bottom:8px">',
-        "    No plans available for your region</strong>",
+        "    No " + _typeLabel() + " plans available for your region</strong>",
         '  <span style="font-size:13px;color:var(--text-4)">',
         "    Please contact support for pricing.</span>",
         "</div>",
@@ -207,7 +214,9 @@ var PricingModule = (function () {
     var planNativeCurrency = plan.currency || "USD";
     var planNativePrice = plan.price || 0;
     var hours = plan.supportHours || 0;
-    var title = plan.title || "Support Plan";
+    var title = plan.title || _typeLabel() + " Plan";
+    var isImpl =
+      _currentType === CONSTANTS.STATUS.CONTRACT_TYPE.IMPLEMENTATION;
 
     var displayPrice = _getPlanPriceInCurrentCurrency(plan);
     var displaySymbol = CONSTANTS.CURRENCY.SYMBOLS[_currentCurrency] || "$";
@@ -215,8 +224,9 @@ var PricingModule = (function () {
     var isConverted = planNativeCurrency !== _currentCurrency;
     var perHour = hours > 0 ? displayPrice / hours : 0;
 
-    var planIcon =
-      hours <= 10
+    var planIcon = isImpl
+      ? "fa-screwdriver-wrench"
+      : hours <= 10
         ? "fa-rocket"
         : hours <= 20
           ? "fa-gem"
@@ -302,11 +312,20 @@ var PricingModule = (function () {
   }
 
   function _getPlanFeatures(hours) {
-    var base = [
-      "Task tracking & approval",
-      "Client support portal",
-      "Progress reporting",
-    ];
+    var isImpl =
+      _currentType === CONSTANTS.STATUS.CONTRACT_TYPE.IMPLEMENTATION;
+
+    var base = isImpl
+      ? [
+          "Implementation task tracking",
+          "Client portal access",
+          "Progress reporting",
+        ]
+      : [
+          "Task tracking & approval",
+          "Client support portal",
+          "Progress reporting",
+        ];
 
     if (hours <= 10) return ["Email support", "30-day validity"].concat(base);
     if (hours <= 20)
@@ -471,7 +490,49 @@ var PricingModule = (function () {
       _renderBalanceStrip();
     });
 
-    _unsubscribers = [unsubPricing, unsubContracts, unsubCurrency];
+    var unsubType = AppState.on("contractType:changed", function (data) {
+      _currentType = data.contractType;
+      // Reset plan selection when switching types
+      _selectedPlan = null;
+      _appliedPromo = null;
+      var orderSection = _el("orderSection");
+      if (orderSection) orderSection.style.display = "none";
+      document
+        .querySelectorAll("#page-purchase .plan")
+        .forEach(function (card) {
+          card.classList.remove("selected-plan");
+        });
+      _renderPlansGrid();
+      _renderBalanceStrip();
+      _syncToggleUI();
+    });
+
+    _unsubscribers = [unsubPricing, unsubContracts, unsubCurrency, unsubType];
+  }
+
+  function _syncToggleUI() {
+    var toggle = _el(CONSTANTS.DOM.PURCHASE_TYPE_TOGGLE);
+    if (!toggle) return;
+    toggle.querySelectorAll(".ptt-btn").forEach(function (btn) {
+      btn.classList.toggle(
+        "active",
+        btn.getAttribute("data-type") === _currentType,
+      );
+    });
+  }
+
+  function switchType(type) {
+    if (type !== _currentType) {
+      AppState.dispatch("SWITCH_CONTRACT_TYPE", { contractType: type });
+    }
+  }
+
+  function goToPurchase(type) {
+    if (type) {
+      _currentType = type;
+      AppState.setUI("currentContractType", type);
+    }
+    navigateTo(CONSTANTS.PAGES.PURCHASE);
   }
 
   // =========================================================================
@@ -489,7 +550,17 @@ var PricingModule = (function () {
   async function onPageEnter() {
     Logger.info("PRICING", "Page entered");
 
+    // Pick up any type set from elsewhere (e.g. Dashboard "Top Up Implementation Hours")
+    var uiType = AppState.get("ui").currentContractType;
+    if (
+      uiType === CONSTANTS.STATUS.CONTRACT_TYPE.SUPPORT ||
+      uiType === CONSTANTS.STATUS.CONTRACT_TYPE.IMPLEMENTATION
+    ) {
+      _currentType = uiType;
+    }
+
     _renderBalanceStrip();
+    _syncToggleUI();
     _setupCurrencyControl();
 
     // ── Detect currency from IP location (cached 30 min) ──
@@ -564,6 +635,7 @@ var PricingModule = (function () {
         userEmail: user.email,
         projectId: activeContract.projectId,
         currency: _currentCurrency,
+        contractType: _currentType,
       });
 
       var summaryCard = document.querySelector("#page-purchase .summary-card");
@@ -587,7 +659,7 @@ var PricingModule = (function () {
           "padding:12px 14px;border-radius:var(--r);margin-top:14px;",
           'font-size:12px;color:var(--primary-dark);line-height:1.5">',
           '  <i class="fa-solid fa-circle-info" style="margin-right:6px"></i>',
-          "  <strong>Adding hours to your existing plan</strong> for ",
+          "  <strong>Adding " + _typeLabel().toLowerCase() + " hours to your existing plan</strong> for ",
           _escapeHtml(existing.projectDisplay) + ". Hours: ",
           "<strong>" +
             existing.purchasedHours +
@@ -602,7 +674,7 @@ var PricingModule = (function () {
           "padding:12px 14px;border-radius:var(--r);margin-top:14px;",
           'font-size:12px;color:var(--green-dark);line-height:1.5">',
           '  <i class="fa-solid fa-circle-check" style="margin-right:6px"></i>',
-          "  <strong>A new support plan</strong> will be created for ",
+          "  <strong>A new " + _typeLabel().toLowerCase() + " plan</strong> will be created for ",
           _escapeHtml(activeContract.projectDisplay) + ".",
           "</div>",
         ].join("");
@@ -725,7 +797,15 @@ var PricingModule = (function () {
       }
     }
 
-    var activeContract = contracts.length > 0 ? contracts[0] : null;
+    // Prefer an active contract of the same type for project/client linkage
+    var sameTypeContracts = contracts.filter(function (c) {
+      return (
+        (c.contractType || CONSTANTS.STATUS.CONTRACT_TYPE.SUPPORT) ===
+        _currentType
+      );
+    });
+    var activeContract =
+      sameTypeContracts.length > 0 ? sameTypeContracts[0] : contracts[0];
     if (!activeContract) {
       showToast("Error", "Unable to identify your account.");
       return;
@@ -757,6 +837,7 @@ var PricingModule = (function () {
       payload[F.PURCHASED_HOURS] = finalHours;
       payload[F.CONSUMED_HOURS] = 0;
       payload[F.CONTRACT_STATUS] = CONSTANTS.STATUS.CONTRACT.ACTIVE;
+      payload[F.CONTRACT_TYPE] = _currentType;
       payload[F.PROMOTION_CODE] = promoCode;
 
       var today = new Date();
@@ -1084,5 +1165,7 @@ var PricingModule = (function () {
     cancelPaymentWait: cancelPaymentWait,
     refresh: refresh,
     destroy: destroy,
+    switchType: switchType,
+    goToPurchase: goToPurchase,
   };
 })();

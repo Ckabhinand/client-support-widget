@@ -65,6 +65,7 @@ var CONSTANTS = (function () {
             PURCHASED_HOURS  : 'Purchased_Hours',
             CONSUMED_HOURS   : 'Consumed_Hours',
             CONTRACT_STATUS  : 'Contract_Status',
+            CONTRACT_TYPE    : 'Contract_Type',
             PAYMENT_URL      : 'Payment_Url',
             PAYMENT_STATUS   : 'Payment_Status'
         },
@@ -101,6 +102,7 @@ var CONSTANTS = (function () {
         PRICING: {
             ID             : 'ID',
             TITLE          : 'Title',
+            PRICE_TYPE     : 'Price_Type',
             SUPPORT_HOURS  : 'Support_Hours',
             CURRENCY       : 'Currency',
             PRICE          : 'Price'
@@ -141,6 +143,14 @@ var CONSTANTS = (function () {
         CONTRACT: {
             ACTIVE   : 'Active',
             INACTIVE : 'Inactive'
+        },
+
+        // ── Contract / Pricing Type ──────────────────────────────────────────
+        // Must match Contract_Type dropdown on Support_Contract
+        // and Price_Type dropdown on Pricing.
+        CONTRACT_TYPE: {
+            SUPPORT        : 'Support',
+            IMPLEMENTATION : 'Implementation'
         },
 
         // ── Requirement ───────────────────────────────────────────────────────
@@ -449,6 +459,16 @@ var CONSTANTS = (function () {
         SUM_DISCOUNT_LINE : 'sumDiscountLine',
         SUM_TOTAL         : 'sumTotal',
         PLANS_GRID        : 'plansGrid',
+        PURCHASE_TYPE_TOGGLE : 'purchaseTypeToggle',
+
+        // Dashboard — dual hours (Support + Implementation)
+        IMPL_HOURS_CARD   : 'implHoursCard',
+        IMPL_DONUT_NUM    : 'implDonutNum',
+        IMPL_USAGE_FILL   : 'implUsageFill',
+        IMPL_TOTAL        : 'implTotal',
+        IMPL_USED         : 'implUsed',
+        IMPL_REMAINING    : 'implRemaining',
+        IMPL_CONTRACT_REF : 'implContractRef',
 
         // Contracts
         CONTRACTS_GRID    : 'contractsGrid',

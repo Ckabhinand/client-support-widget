@@ -45,6 +45,7 @@ var ContractRepo = (function () {
    *   remainingHours  : number,   // Computed: purchased - consumed
    *   usagePercent    : number,   // Computed: consumed / purchased * 100
    *   status          : string,   // 'Active' | 'Inactive'
+   *   contractType    : string,   // 'Support' | 'Implementation'
    *   isActive        : boolean
    * }
    */
@@ -58,6 +59,11 @@ var ContractRepo = (function () {
 
     var status = H.getString(record, F.CONTRACT_STATUS, "");
     var isActive = status === CONSTANTS.STATUS.CONTRACT.ACTIVE;
+
+    // Contract type — fallback to Support for legacy records
+    var contractType =
+      H.getString(record, F.CONTRACT_TYPE, "") ||
+      CONSTANTS.STATUS.CONTRACT_TYPE.SUPPORT;
 
     var paymentUrl = H.getString(record, F.PAYMENT_URL, "");
     var paymentStatus = H.getString(record, F.PAYMENT_STATUS, "");
@@ -81,6 +87,10 @@ var ContractRepo = (function () {
       remainingHours: remaining,
       usagePercent: usagePct,
       status: status,
+      contractType: contractType,
+      isSupport: contractType === CONSTANTS.STATUS.CONTRACT_TYPE.SUPPORT,
+      isImplementation:
+        contractType === CONSTANTS.STATUS.CONTRACT_TYPE.IMPLEMENTATION,
       isActive: isActive,
       paymentUrl: paymentUrl,
       paymentStatus: paymentStatus,
@@ -243,6 +253,29 @@ var ContractRepo = (function () {
    *   uniqueProjects    : Array     // [projectName1, projectName2, ...]
    * }
    */
+  function _buildSummaryFor(contracts) {
+    var purchased = 0;
+    var consumed = 0;
+
+    contracts.forEach(function (c) {
+      purchased += c.purchasedHours;
+      consumed += c.consumedHours;
+    });
+
+    var remaining = Math.max(0, purchased - consumed);
+    var usagePct =
+      purchased > 0 ? Math.round((consumed / purchased) * 100) : 0;
+
+    return {
+      totalPurchased: purchased,
+      totalConsumed: consumed,
+      totalRemaining: remaining,
+      usagePercent: usagePct,
+      activeCount: contracts.length,
+      contracts: contracts,
+    };
+  }
+
   async function getHoursSummary(userEmail) {
     var active = await getActive(userEmail);
 
@@ -253,9 +286,18 @@ var ContractRepo = (function () {
     var contractsByProject = {};
     var uniqueProjects = [];
 
+    var supportContracts = [];
+    var implementationContracts = [];
+
     active.forEach(function (c) {
       totalPurchased += c.purchasedHours;
       totalConsumed += c.consumedHours;
+
+      if (c.isImplementation) {
+        implementationContracts.push(c);
+      } else {
+        supportContracts.push(c);
+      }
 
       var projName = c.projectDisplay || "Unknown Project";
       if (!contractsByProject[projName]) {
@@ -271,12 +313,17 @@ var ContractRepo = (function () {
         ? Math.round((totalConsumed / totalPurchased) * 100)
         : 0;
 
+    var supportSummary = _buildSummaryFor(supportContracts);
+    var implementationSummary = _buildSummaryFor(implementationContracts);
+
     Logger.info("REPO", "Hours summary calculated", {
       contracts: active.length,
       projects: uniqueProjects.length,
       totalPurchased: totalPurchased,
       totalConsumed: totalConsumed,
       totalRemaining: totalRemaining,
+      support: supportContracts.length,
+      implementation: implementationContracts.length,
     });
 
     return {
@@ -288,6 +335,8 @@ var ContractRepo = (function () {
       contracts: active,
       contractsByProject: contractsByProject,
       uniqueProjects: uniqueProjects,
+      support: supportSummary,
+      implementation: implementationSummary,
     };
   }
   /**
@@ -425,6 +474,7 @@ async function incrementConsumedHours(id, additionalHours) {
     var userEmail = criteria.userEmail;
     var projectId = criteria.projectId;
     var currency = criteria.currency;
+    var contractType = criteria.contractType;
 
     if (!userEmail || !projectId) {
       Logger.warn("REPO", "findExistingContract: missing required criteria");
@@ -437,11 +487,12 @@ async function incrementConsumedHours(id, additionalHours) {
       // Get all active contracts for the user
       var allContracts = await getActive(userEmail);
 
-      // Find matching project + currency
+      // Find matching project + currency + (optional) contract type
       var match = allContracts.find(function (c) {
         var sameProject = c.projectId === projectId;
         var sameCurrency = !currency || c.currency === currency;
-        return sameProject && sameCurrency;
+        var sameType = !contractType || c.contractType === contractType;
+        return sameProject && sameCurrency && sameType;
       });
 
       if (match) {

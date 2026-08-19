@@ -267,6 +267,93 @@
             </div>
           </div>
 
+          <!-- Implementation Hours (mirrors Support Hours card) -->
+          <div class="card hours-card impl-hours-card" id="implHoursCard" style="display:none">
+            <div class="card-head">
+              <div class="ch-title-group">
+                <h3>Implementation Hours</h3>
+                <span
+                  class="card-subtle"
+                  id="implContractRef"
+                  style="display: none"
+                  >Loading...</span
+                >
+              </div>
+              <span class="badge badge-blue">
+                <i class="fa-solid fa-screwdriver-wrench"></i> Implementation
+              </span>
+            </div>
+            <div class="hours-visual">
+              <div class="donut-wrap">
+                <svg viewBox="0 0 160 160" class="donut">
+                  <circle
+                    cx="80"
+                    cy="80"
+                    r="65"
+                    fill="none"
+                    class="donut-track"
+                    stroke-width="14"
+                  />
+                  <circle
+                    cx="80"
+                    cy="80"
+                    r="65"
+                    fill="none"
+                    stroke-width="14"
+                    stroke-dasharray="408.41"
+                    stroke-dashoffset="408.41"
+                    stroke-linecap="round"
+                    transform="rotate(-90 80 80)"
+                    class="donut-fill impl-donut-fill"
+                  />
+                </svg>
+                <div class="donut-text">
+                  <div class="donut-num" id="implDonutNum">—</div>
+                  <div class="donut-unit">hours left</div>
+                </div>
+              </div>
+              <div class="hours-data">
+                <div class="data-row">
+                  <div class="data-marker total"></div>
+                  <span class="data-label">Total Purchased</span>
+                  <strong class="data-value" id="implTotal">— hrs</strong>
+                </div>
+                <div class="data-row">
+                  <div class="data-marker used"></div>
+                  <span class="data-label">Hours Used</span>
+                  <strong class="data-value" id="implUsed">— hrs</strong>
+                </div>
+                <div class="data-row">
+                  <div class="data-marker remaining"></div>
+                  <span class="data-label">Remaining</span>
+                  <strong class="data-value remaining" id="implRemaining"
+                    >— hrs</strong
+                  >
+                </div>
+                <div class="usage-progress">
+                  <div class="usage-track">
+                    <div
+                      class="usage-fill impl-usage-fill"
+                      id="implUsageFill"
+                      style="width: 0%"
+                    ></div>
+                  </div>
+                  <div class="usage-text">
+                    <span id="implUsageTextLeft">—% used</span>
+                    <span id="implUsageTextRight">—% remaining</span>
+                  </div>
+                </div>
+                <button
+                  class="btn btn-primary btn-block"
+                  onclick="PricingModule.goToPurchase('Implementation')"
+                >
+                  <i class="fa-solid fa-circle-plus"></i>
+                  Top Up Implementation Hours
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div class="card">
             <div class="card-head">
               <h3>Active Requirements</h3>
@@ -447,12 +534,34 @@
       <section class="page" id="page-purchase">
         <div class="page-hero">
           <div>
-            <h1>Purchase Support Hours</h1>
+            <h1>Purchase Hours</h1>
             <p>Choose a plan that best fits your project requirements</p>
           </div>
         </div>
 
-        <div class="balance-strip">
+        <!-- Purchase type toggle: Support vs Implementation -->
+        <div class="purchase-type-toggle" id="purchaseTypeToggle">
+          <button
+            type="button"
+            class="ptt-btn active"
+            data-type="Support"
+            onclick="PricingModule.switchType('Support')"
+          >
+            <i class="fa-solid fa-headset"></i>
+            <span>Support Hours</span>
+          </button>
+          <button
+            type="button"
+            class="ptt-btn"
+            data-type="Implementation"
+            onclick="PricingModule.switchType('Implementation')"
+          >
+            <i class="fa-solid fa-screwdriver-wrench"></i>
+            <span>Implementation Hours</span>
+          </button>
+        </div>
+
+        <div class="balance-strip" id="purchaseBalanceStrip">
           <div class="bal-item">
             <div class="bal-icon">
               <i class="fa-solid fa-cart-shopping"></i>

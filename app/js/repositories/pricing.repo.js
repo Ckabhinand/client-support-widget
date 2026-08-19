@@ -28,6 +28,7 @@ var PricingRepo = (function () {
      * {
      *   id           : string,
      *   title        : string,
+     *   priceType    : string,   // 'Support' | 'Implementation'
      *   supportHours : number,
      *   currency     : string,
      *   price        : number,
@@ -45,10 +46,15 @@ var PricingRepo = (function () {
             : 0;
 
         var title = H.getString(record, F.TITLE, '');
+        var priceType = H.getString(record, F.PRICE_TYPE, '')
+            || CONSTANTS.STATUS.CONTRACT_TYPE.SUPPORT;
 
         return {
             id           : H.getString(record, 'ID', ''),
             title        : title,
+            priceType    : priceType,
+            isSupport    : priceType === CONSTANTS.STATUS.CONTRACT_TYPE.SUPPORT,
+            isImplementation : priceType === CONSTANTS.STATUS.CONTRACT_TYPE.IMPLEMENTATION,
             supportHours : hours,
             currency     : H.getString(record, F.CURRENCY, 'USD'),
             price        : price,

@@ -643,6 +643,65 @@
     font-weight: 500;
 }
 
+/* ===== PURCHASE TYPE TOGGLE ===== */
+.purchase-type-toggle {
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-full);
+    padding: 5px;
+    gap: 4px;
+    margin-bottom: var(--s-5);
+    box-shadow: var(--shadow-sm);
+}
+
+.ptt-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 22px;
+    border: none;
+    background: transparent;
+    border-radius: var(--r-full);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-4);
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: all var(--t-fast);
+}
+
+.ptt-btn i { font-size: 13px; }
+
+.ptt-btn:hover {
+    color: var(--text-2);
+    background: var(--bg);
+}
+
+.ptt-btn.active {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 4px 12px var(--primary-glow);
+}
+
+/* ===== IMPLEMENTATION HOURS CARD (alternate accent) ===== */
+.impl-hours-card .impl-donut-fill {
+    stroke: var(--purple);
+    filter: drop-shadow(0 4px 8px var(--purple-soft));
+}
+
+.impl-hours-card .data-marker.remaining { background: var(--purple); }
+.impl-hours-card .data-value.remaining  { color: var(--purple); }
+.impl-hours-card .donut-num             { color: var(--purple); }
+.impl-hours-card .impl-usage-fill       { background: var(--purple); }
+.impl-hours-card .btn-primary {
+    background: var(--purple);
+}
+.impl-hours-card .btn-primary:hover {
+    background: var(--purple-dark, #6d28d9);
+}
+
 /* ===== PLANS ===== */
 .plans-grid {
     display: grid;
