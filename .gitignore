@@ -1,26 +1,24 @@
+```
+# Build artifacts
+dist/
+build/
+*.min.css
+*.min.js
+build-manifest.json
+
 # Dependencies
 node_modules/
 
-# Build output
-dist/
-
-# Translation files
-app/translations/
-
-# Private certificates / keys
-cert.pem
-key.pem
-
-# Logs
+# Logs and temp files
 *.log
+*.tmp
 
-# Optional: reference/design images
-css_reference_images/
+# Environment
+.env
+.env.local
+*.env.*
 
-client support promt.txt
-
-# Package files
-package.json
-package-lock.json
-plugin-manifest.json
-server/
+# Editors
+.vscode/
+.idea/
+```
