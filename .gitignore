@@ -21,5 +21,8 @@ node_modules/
 # Editors
 .vscode/
 .idea/
+
+# Local TLS private key
+client_support_widget_remote/key.pem
 ```
 analysis.md
