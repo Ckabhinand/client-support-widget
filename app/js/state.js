@@ -15,6 +15,7 @@
      'REFRESH_REQUIREMENTS'
      'REFRESH_TASKS'
      'SWITCH_CURRENCY'
+     'SWITCH_CONTRACT_TYPE'
      'OPEN_REQUIREMENT_DETAIL'
      'CLOSE_REQUIREMENT_DETAIL'
 
@@ -56,6 +57,7 @@ var AppState = (function () {
             currentPage           : CONSTANTS.PAGES.DASHBOARD,
             currentTaskTab        : CONSTANTS.TASK_TABS.ALL,
             currentCurrency       : CONSTANTS.CURRENCY.USD,
+            currentContractType   : CONSTANTS.STATUS.CONTRACT_TYPE.SUPPORT,
             isLoading             : false,
             selectedTaskIds       : [],
             selectedPlanId        : null,
@@ -71,7 +73,17 @@ var AppState = (function () {
                 totalRemaining : 0,
                 usagePercent   : 0,
                 activeCount    : 0,
-                contracts      : []
+                contracts      : [],
+                support        : {
+                    totalPurchased : 0, totalConsumed : 0,
+                    totalRemaining : 0, usagePercent   : 0,
+                    activeCount    : 0, contracts      : []
+                },
+                implementation : {
+                    totalPurchased : 0, totalConsumed : 0,
+                    totalRemaining : 0, usagePercent   : 0,
+                    activeCount    : 0, contracts      : []
+                }
             },
             loaded : false
         },
@@ -495,6 +507,17 @@ var AppState = (function () {
         _emit('currency:changed', { currency: currency });
     }
 
+    function _handleSwitchContractType(payload) {
+        var contractType = payload.contractType;
+        var T = CONSTANTS.STATUS.CONTRACT_TYPE;
+        if (contractType !== T.SUPPORT && contractType !== T.IMPLEMENTATION) {
+            Logger.warn('STATE', 'SWITCH_CONTRACT_TYPE: invalid → ' + contractType);
+            return;
+        }
+        _state.ui.currentContractType = contractType;
+        _emit('contractType:changed', { contractType: contractType });
+    }
+
     async function _handleOpenDetail(payload) {
         var reqId = payload.requirementId;
         if (!reqId) return;
@@ -538,6 +561,7 @@ var AppState = (function () {
             case 'REFRESH_REQUIREMENTS'      : return _handleRefreshRequirements();
             case 'REFRESH_TASKS'             : return _handleRefreshTasks();
             case 'SWITCH_CURRENCY'           : return _handleSwitchCurrency(payload);
+            case 'SWITCH_CONTRACT_TYPE'      : return _handleSwitchContractType(payload);
             case 'OPEN_REQUIREMENT_DETAIL'   : return _handleOpenDetail(payload);
             case 'CLOSE_REQUIREMENT_DETAIL'  : return _handleCloseDetail();
             default                          : Logger.warn('STATE', 'Unknown action: ' + action);

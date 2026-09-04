@@ -261,34 +261,29 @@ var DashboardModule = (function () {
 
   function _renderHoursCard() {
     var summary = AppState.get("contracts").hoursSummary;
-    var purchased = summary.totalPurchased;
-    var consumed = summary.totalConsumed;
-    var remaining = summary.totalRemaining;
-    var usagePct = summary.usagePercent;
+    // The Support Hours card uses the Support-type summary (falls back to total
+    // for legacy data before contract types existed).
+    var supportSummary = summary.support || summary;
+    var purchased = supportSummary.totalPurchased;
+    var consumed = supportSummary.totalConsumed;
+    var remaining = supportSummary.totalRemaining;
+    var usagePct = supportSummary.usagePercent;
 
-    var summary = AppState.get("contracts").hoursSummary;
-    var activeCount = summary.activeCount || 0;
-    var projects = summary.uniqueProjects || [];
+    var activeCount = supportSummary.activeCount || 0;
 
     var contractEl = document.querySelector(
-      "#page-dashboard .card.hours-card .card-subtle",
+      "#page-dashboard .card.hours-card:not(.impl-hours-card) .card-subtle",
     );
     if (contractEl) {
       if (activeCount === 0) {
-        contractEl.textContent = "No active contracts";
+        contractEl.textContent = "No active plans";
       } else if (activeCount === 1) {
-        var firstContract = summary.contracts[0];
+        var firstContract = supportSummary.contracts[0];
         contractEl.textContent =
           firstContract.planDisplay ||
-          "Contract SC-" + firstContract.id.slice(-6);
+          "Plan SC-" + firstContract.id.slice(-6);
       } else {
-        contractEl.textContent =
-          activeCount +
-          " active contracts" +
-          " · " +
-          projects.length +
-          " project" +
-          (projects.length !== 1 ? "s" : "");
+        contractEl.textContent = activeCount + " active support plans";
       }
     }
 
@@ -296,7 +291,9 @@ var DashboardModule = (function () {
     var circumference = 408.41;
     var dashOffset = circumference - circumference * (usagePct / 100);
 
-    var donutFill = document.querySelector("#page-dashboard .donut-fill");
+    var donutFill = document.querySelector(
+      "#page-dashboard .card.hours-card:not(.impl-hours-card) .donut-fill",
+    );
     if (donutFill) {
       donutFill.style.transition = "none";
       donutFill.setAttribute("stroke-dashoffset", circumference);
@@ -309,13 +306,17 @@ var DashboardModule = (function () {
     }
 
     // ── Donut center text ──
-    var donutNum = document.querySelector("#page-dashboard .donut-num");
+    var donutNum = document.querySelector(
+      "#page-dashboard .card.hours-card:not(.impl-hours-card) .donut-num",
+    );
     if (donutNum) {
       _animateNumber(donutNum, remaining);
     }
 
     // ── Data rows ──
-    var hoursData = document.querySelector("#page-dashboard .hours-data");
+    var hoursData = document.querySelector(
+      "#page-dashboard .card.hours-card:not(.impl-hours-card) .hours-data",
+    );
     if (hoursData) {
       var dataValues = hoursData.querySelectorAll(".data-value");
 
@@ -349,6 +350,74 @@ var DashboardModule = (function () {
     }
 
     Logger.debug("DASHBOARD", "Hours card rendered");
+  }
+
+  /**
+   * Render the Implementation Hours card.
+   * Only shown when the client has at least one Implementation contract.
+   */
+  function _renderImplementationCard() {
+    var card = _el(CONSTANTS.DOM.IMPL_HOURS_CARD);
+    if (!card) return;
+
+    var summary = AppState.get("contracts").hoursSummary;
+    var impl = summary.implementation;
+
+    // Hide the card entirely if there are no implementation contracts
+    if (!impl || (impl.activeCount || 0) === 0) {
+      card.style.display = "none";
+      return;
+    }
+
+    card.style.display = "";
+
+    var purchased = impl.totalPurchased || 0;
+    var consumed = impl.totalConsumed || 0;
+    var remaining = impl.totalRemaining || 0;
+    var usagePct = impl.usagePercent || 0;
+
+    var circumference = 408.41;
+    var dashOffset = circumference - circumference * (usagePct / 100);
+
+    var donutFill = card.querySelector(".impl-donut-fill");
+    if (donutFill) {
+      donutFill.style.transition = "none";
+      donutFill.setAttribute("stroke-dashoffset", circumference);
+      setTimeout(function () {
+        donutFill.style.transition =
+          "stroke-dashoffset 2s cubic-bezier(0.4,0,0.2,1)";
+        donutFill.setAttribute("stroke-dashoffset", dashOffset.toFixed(2));
+      }, CONSTANTS.UI.PROGRESS_ANIM_DELAY);
+    }
+
+    var donutNum = _el(CONSTANTS.DOM.IMPL_DONUT_NUM);
+    if (donutNum) _animateNumber(donutNum, remaining);
+
+    var totalEl = _el(CONSTANTS.DOM.IMPL_TOTAL);
+    if (totalEl) totalEl.textContent = purchased + " hrs";
+    var usedEl = _el(CONSTANTS.DOM.IMPL_USED);
+    if (usedEl) usedEl.textContent = consumed + " hrs";
+    var remEl = _el(CONSTANTS.DOM.IMPL_REMAINING);
+    if (remEl) remEl.textContent = remaining + " hrs";
+
+    var usageFill = card.querySelector(".impl-usage-fill");
+    if (usageFill) {
+      usageFill.style.width = "0%";
+      setTimeout(function () {
+        usageFill.style.width = usagePct + "%";
+      }, CONSTANTS.UI.PROGRESS_ANIM_DELAY);
+    }
+
+    var textL = card.querySelector("#implUsageTextLeft");
+    if (textL) textL.textContent = usagePct + "% used";
+    var textR = card.querySelector("#implUsageTextRight");
+    if (textR) textR.textContent = 100 - usagePct + "% remaining";
+
+    Logger.debug("DASHBOARD", "Implementation card rendered", {
+      purchased: purchased,
+      consumed: consumed,
+      remaining: remaining,
+    });
   }
 
   /**
@@ -883,6 +952,7 @@ var DashboardModule = (function () {
     _renderAlertBar();
     _renderStatsGrid();
     _renderHoursCard();
+    _renderImplementationCard();
     _renderActiveRequirements();
     _renderTaskProgress();
     _renderTimeline();
@@ -919,6 +989,7 @@ var DashboardModule = (function () {
 
     var unsubContracts = AppState.on("contracts:loaded", function () {
       _renderHoursCard();
+      _renderImplementationCard();
       _renderStatsGrid();
       _renderAlertBar();
     });
@@ -937,6 +1008,7 @@ var DashboardModule = (function () {
 
     var unsubHours = AppState.on("hours:updated", function () {
       _renderHoursCard();
+      _renderImplementationCard();
       _renderAlertBar();
     });
 
