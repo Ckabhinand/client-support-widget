@@ -268,7 +268,7 @@
           </div>
 
           <!-- Implementation Hours (mirrors Support Hours card) -->
-          <div class="card hours-card impl-hours-card" id="implHoursCard" style="display:none">
+          <div class="card hours-card impl-hours-card" id="implHoursCard">
             <div class="card-head">
               <div class="ch-title-group">
                 <h3>Implementation Hours</h3>
@@ -354,28 +354,7 @@
             </div>
           </div>
 
-          <div class="card">
-            <div class="card-head">
-              <h3>Active Requirements</h3>
-              <button class="link-btn" onclick="navigateTo('requirements')">
-                View all <i class="fa-solid fa-arrow-right"></i>
-              </button>
-            </div>
-            <div class="item-list" id="activeReqsList">
-              <p
-                style="
-                  font-size: 12px;
-                  color: var(--text-4);
-                  text-align: center;
-                  padding: 20px 0;
-                "
-              >
-                Loading requirements...
-              </p>
-            </div>
-          </div>
-
-          <div class="card">
+          <div class="card task-progress-card">
             <div class="card-head">
               <h3>Task Progress</h3>
               <button class="link-btn" onclick="navigateTo('tasks')">
@@ -437,6 +416,27 @@
                 "
               >
                 Loading tasks...
+              </p>
+            </div>
+          </div>
+
+          <div class="card full-span">
+            <div class="card-head">
+              <h3>Active Requirements</h3>
+              <button class="link-btn" onclick="navigateTo('requirements')">
+                View all <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+            <div class="item-list" id="activeReqsList">
+              <p
+                style="
+                  font-size: 12px;
+                  color: var(--text-4);
+                  text-align: center;
+                  padding: 20px 0;
+                "
+              >
+                Loading requirements...
               </p>
             </div>
           </div>

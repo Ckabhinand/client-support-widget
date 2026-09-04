@@ -275,6 +275,7 @@ var DashboardModule = (function () {
       "#page-dashboard .card.hours-card:not(.impl-hours-card) .card-subtle",
     );
     if (contractEl) {
+      contractEl.style.display = "";
       if (activeCount === 0) {
         contractEl.textContent = "No active plans";
       } else if (activeCount === 1) {
@@ -354,20 +355,22 @@ var DashboardModule = (function () {
 
   /**
    * Render the Implementation Hours card.
-   * Only shown when the client has at least one Implementation contract.
+   * Always visible on the dashboard — shows a zeroed state
+   * when the client has no implementation contracts yet.
    */
   function _renderImplementationCard() {
     var card = _el(CONSTANTS.DOM.IMPL_HOURS_CARD);
     if (!card) return;
 
     var summary = AppState.get("contracts").hoursSummary;
-    var impl = summary.implementation;
-
-    // Hide the card entirely if there are no implementation contracts
-    if (!impl || (impl.activeCount || 0) === 0) {
-      card.style.display = "none";
-      return;
-    }
+    var impl = summary.implementation || {
+      totalPurchased: 0,
+      totalConsumed: 0,
+      totalRemaining: 0,
+      usagePercent: 0,
+      activeCount: 0,
+      contracts: [],
+    };
 
     card.style.display = "";
 
@@ -375,6 +378,22 @@ var DashboardModule = (function () {
     var consumed = impl.totalConsumed || 0;
     var remaining = impl.totalRemaining || 0;
     var usagePct = impl.usagePercent || 0;
+    var activeCount = impl.activeCount || 0;
+
+    // ── Subtitle (plan reference) ──
+    var contractRef = _el(CONSTANTS.DOM.IMPL_CONTRACT_REF);
+    if (contractRef) {
+      contractRef.style.display = "";
+      if (activeCount === 0) {
+        contractRef.textContent = "No active plan";
+      } else if (activeCount === 1) {
+        var firstImpl = impl.contracts[0];
+        contractRef.textContent =
+          firstImpl.planDisplay || "Plan SC-" + firstImpl.id.slice(-6);
+      } else {
+        contractRef.textContent = activeCount + " active plans";
+      }
+    }
 
     var circumference = 408.41;
     var dashOffset = circumference - circumference * (usagePct / 100);

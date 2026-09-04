@@ -62,13 +62,17 @@
 
 /* === Large (1100px) === */
 @media (max-width: 1100px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 
-  .dash-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+    .dash-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .task-progress-card {
+        grid-column: 1 / -1;
+    }
 
   .plans-grid {
     grid-template-columns: 1fr;
@@ -79,13 +83,9 @@
     grid-template-columns: 1fr;
   }
 
-  .hours-card {
-    grid-column: 1 / -1;
-  }
-
-  .approval-grid {
-    grid-template-columns: 1fr;
-  }
+    .approval-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* === Tablet (900px) === */

@@ -24,3 +24,6 @@ package.json
 package-lock.json
 plugin-manifest.json
 server/
+# Dev preview harness output
+dev-preview/preview.html
+dev-preview/preview-noimpl.html
