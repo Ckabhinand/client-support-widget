@@ -814,23 +814,9 @@
 
 .ptt-btn.active i { color: var(--primary); }
 
-/* ===== IMPLEMENTATION HOURS CARD (alternate accent) ===== */
-.impl-hours-card .impl-donut-fill {
-    stroke: var(--purple);
-    filter: drop-shadow(0 4px 8px var(--purple-soft));
-}
-
-.impl-hours-card .data-marker.remaining { background: var(--purple); }
-.impl-hours-card .data-value.remaining  { color: var(--purple); }
-.impl-hours-card .donut-num             { color: var(--purple); }
-.impl-hours-card .impl-usage-fill       { background: var(--purple); }
-.impl-hours-card .btn-primary {
-    background: var(--purple);
-}
-.impl-hours-card .btn-primary:hover {
-    background: var(--purple-dark);
-    box-shadow: 0 2px 8px -2px rgba(139, 92, 246, 0.35);
-}
+/* ===== IMPLEMENTATION HOURS CARD =====
+   Follows the brand theme (var(--primary)) — same accent system as the
+   Support Hours card; only the badge/title differentiates the two. */
 
 /* ===== PLANS ===== */
 .plans-grid {
