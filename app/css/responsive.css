@@ -201,6 +201,17 @@
 
 /* === Small Mobile (480px) === */
 @media (max-width: 480px) {
+  .purchase-type-toggle {
+    display: flex;
+    width: 100%;
+  }
+
+  .ptt-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 7px 8px;
+  }
+
   .balance-strip {
     grid-template-columns: 1fr;
   }
