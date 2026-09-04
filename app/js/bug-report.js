@@ -182,7 +182,7 @@ var BugReportModule = (function () {
                 return;
             }
 
-            list.innerHTML = '<div class="item-list" style="padding:8px 24px;">'
+            list.innerHTML = '<div class="item-list" style="padding:6px 16px;">'
                 + reports.map(function (item) {
                     return [
                         '<div class="list-row">',
