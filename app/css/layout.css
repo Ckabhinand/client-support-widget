@@ -233,7 +233,6 @@
 
 /* ===== MAIN CONTENT ===== */
 .main {
-  max-width: var(--max-w);
   margin: 0 auto;
   padding: 18px var(--pad) 28px;
   min-height: calc(100vh - var(--topbar-h));
