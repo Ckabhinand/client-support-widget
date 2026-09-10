@@ -441,89 +441,28 @@
             </div>
           </div>
 
-          <div class="card full-span timeline-card-wrapper">
+          <div class="card full-span projects-card">
             <div class="card-head">
               <div class="ch-title-group">
-                <h3>Project Timeline</h3>
-                <span class="card-subtle" id="timelineSubtitle"
+                <h3>My Projects</h3>
+                <span class="card-subtle" id="projectsSubtitle"
                   >Loading...</span
                 >
               </div>
-              <div class="timeline-controls">
-                <span class="badge badge-blue" id="timelinePhase">—</span>
-                <div class="timeline-nav">
-                  <button
-                    class="tl-nav-btn"
-                    onclick="DashboardModule.switchTimeline('prev')"
-                    title="Previous Project"
-                  >
-                    <i class="fa-solid fa-chevron-left"></i>
-                  </button>
-                  <div class="tl-project-indicator">
-                    <div class="tl-proj-dots" id="tlProjDots"></div>
-                    <span class="tl-proj-counter">
-                      <strong id="tlCurrentIdx">0</strong>
-                      <span>/</span>
-                      <span id="tlTotalCount">0</span>
-                    </span>
-                  </div>
-                  <button
-                    class="tl-nav-btn"
-                    onclick="DashboardModule.switchTimeline('next')"
-                    title="Next Project"
-                  >
-                    <i class="fa-solid fa-chevron-right"></i>
-                  </button>
-                </div>
-              </div>
+              <button class="link-btn" onclick="navigateTo('tasks')">
+                View all tasks <i class="fa-solid fa-arrow-right"></i>
+              </button>
             </div>
-
-            <div class="tl-project-bar" id="tlProjectBar">
-              <div class="tl-proj-icon" id="tlProjIcon">
-                <i class="fa-solid fa-folder"></i>
-              </div>
-              <div class="tl-proj-meta">
-                <span class="tl-proj-name" id="tlProjName">Loading...</span>
-                <span class="tl-proj-stats" id="tlProjStats">—</span>
-              </div>
-              <span class="badge badge-success">
-                <span class="badge-dot"></span> Active
-              </span>
-            </div>
-
-            <div class="timeline" id="timelineContent">
+            <div class="projects-list" id="projectsList">
               <p
                 style="
-                  width: 100%;
                   text-align: center;
                   padding: 20px;
                   color: var(--text-4);
                   font-size: 13px;
                 "
               >
-                Loading timeline...
-              </p>
-            </div>
-          </div>
-
-          <div class="card full-span">
-            <div class="card-head">
-              <h3>Recent Task Activity</h3>
-              <span class="badge badge-blue" id="approvalBadge">
-                <i class="fa-solid fa-list-check"></i> — Tasks
-              </span>
-            </div>
-            <div class="approval-grid" id="approvalGrid">
-              <p
-                style="
-                  grid-column: 1/-1;
-                  text-align: center;
-                  padding: 20px;
-                  color: var(--text-4);
-                  font-size: 13px;
-                "
-              >
-                Loading tasks...
+                Loading projects...
               </p>
             </div>
           </div>

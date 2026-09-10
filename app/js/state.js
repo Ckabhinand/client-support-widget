@@ -322,8 +322,8 @@ var AppState = (function () {
     }
 
     /**
-     * REJECT_TASK — Pending Approval | Approved | Pending Completion
-     * Approval → Rework Required (with reason)
+     * REJECT_TASK — Pending Approval | Pending Completion Approval →
+     * Rework Required (with reason)
      */
     async function _handleRejectTask(payload) {
         var taskId    = payload.taskId;
@@ -950,9 +950,6 @@ var AppState = (function () {
             case 'hasMultipleContracts'   : return contracts.active.length > 1;
             case 'hasMultipleProjects'    : return (contracts.hoursSummary.uniqueProjects || []).length > 1;
             case 'currentProjects'        : return _state.timeline.projects;
-            case 'currentTimelineProject' :
-                var idx = _state.timeline.currentIndex;
-                return _state.timeline.projects.length > 0 ? _state.timeline.projects[idx] : null;
             case 'timelineProjectsCount'  : return _state.timeline.projects.length;
             default: Logger.warn('STATE', 'computed: unknown → ' + key); return null;
         }
@@ -973,21 +970,10 @@ var AppState = (function () {
         });
     }
 
-    function switchTimeline(direction) {
-        var total = _state.timeline.projects.length;
-        if (total === 0) return;
-        var c = _state.timeline.currentIndex;
-        _state.timeline.currentIndex = direction === 'next' ? (c + 1) % total : (c - 1 + total) % total;
-        _emit('timeline:switched', {
-            project: computed('currentTimelineProject'),
-            index: _state.timeline.currentIndex, total: total
-        });
-    }
-
     return {
         bootstrap: bootstrap, get: get, set: set, dispatch: dispatch,
         on: on, off: off, computed: computed, setUI: setUI,
-        setTaskSelected: setTaskSelected, switchTimeline: switchTimeline
+        setTaskSelected: setTaskSelected
     };
 
 })();

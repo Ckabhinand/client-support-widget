@@ -166,27 +166,6 @@
 
             if (e.target.matches('input, textarea, select')) return;
 
-            var P = (typeof CONSTANTS !== 'undefined')
-                ? CONSTANTS.PAGES
-                : { DASHBOARD: 'dashboard' };
-
-            var dashPage   = document.getElementById('page-' + P.DASHBOARD);
-            var dashActive = dashPage && dashPage.classList.contains('active');
-
-            if (dashActive) {
-                if (e.key === 'ArrowLeft') {
-                    e.preventDefault();
-                    if (typeof AppState !== 'undefined') {
-                        AppState.switchTimeline('prev');
-                    }
-                } else if (e.key === 'ArrowRight') {
-                    e.preventDefault();
-                    if (typeof AppState !== 'undefined') {
-                        AppState.switchTimeline('next');
-                    }
-                }
-            }
-
             if (e.key === 'Escape') {
                 var openModals = document.querySelectorAll('.modal-backdrop.show');
                 if (openModals.length > 0) {

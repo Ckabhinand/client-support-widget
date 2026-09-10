@@ -857,7 +857,12 @@ var PricingModule = (function () {
 
       if (activeContract.clientId) {
         payload[F.CLIENT] = activeContract.clientId;
-        payload[F.EMAIL] = activeContract.clientId;
+      }
+      // Email is a LOOKUP on the contract form — link the same user
+      // record (NOT the client ID) so the new contract shows up under
+      // the client's account query.
+      if (activeContract.emailId) {
+        payload[F.EMAIL] = activeContract.emailId;
       }
       // Project is a multi-select lookup — carry over ALL of the
       // existing contract's projects (comma-separated IDs for Zoho).

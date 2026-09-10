@@ -750,7 +750,18 @@ var SdkService = (function () {
                 payload   : { data: data }
             });
 
-            var newId = (response.data && response.data.ID) || '';
+            // Zoho SDK response shapes vary ({data:{ID}} | {data:[{ID}]} | {ID})
+            var newId = '';
+            if (response && response.data) {
+                if (Array.isArray(response.data) && response.data[0]) {
+                    newId = response.data[0].ID || '';
+                } else {
+                    newId = response.data.ID || '';
+                }
+            }
+            if (!newId && response && response.ID) {
+                newId = response.ID;
+            }
 
             Logger.timeEnd('SDK', 'addRecord:' + formName);
             Logger.info('SDK', 'addRecord ✅ ' + formName + ' → ID: ' + newId);

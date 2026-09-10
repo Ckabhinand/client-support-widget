@@ -409,15 +409,6 @@ var CONSTANTS = (function () {
         TASK_MINI_LIST   : 'taskMiniList',
 
         // Timeline
-        TIMELINE_CONTENT : 'timelineContent',
-        TIMELINE_SUBTITLE: 'timelineSubtitle',
-        TIMELINE_PHASE   : 'timelinePhase',
-        TL_PROJ_ICON     : 'tlProjIcon',
-        TL_PROJ_NAME     : 'tlProjName',
-        TL_PROJ_STATS    : 'tlProjStats',
-        TL_PROJ_DOTS     : 'tlProjDots',
-        TL_CURRENT_IDX   : 'tlCurrentIdx',
-        TL_TOTAL_COUNT   : 'tlTotalCount',
 
         // Approvals
         APPROVAL_GRID    : 'approvalGrid',

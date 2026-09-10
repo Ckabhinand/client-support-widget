@@ -598,291 +598,87 @@ var DashboardModule = (function () {
     Logger.debug("DASHBOARD", "Task progress rendered");
   }
 
-  function _renderTimeline() {
-    var project = AppState.computed("currentTimelineProject");
-    var timeline = AppState.get("timeline");
-    var total = timeline.projects.length;
-    var index = timeline.currentIndex;
-
-    if (!project) {
-      var timelineEl = _el(CONSTANTS.DOM.TIMELINE_CONTENT);
-      if (timelineEl) {
-        timelineEl.innerHTML = [
-          '<div style="text-align:center;padding:24px;',
-          'color:var(--text-4);font-size:13px;width:100%">',
-          '  <i class="fa-solid fa-timeline" ',
-          '    style="font-size:24px;opacity:0.3;',
-          '    margin-bottom:8px;display:block"></i>',
-          "  No active projects",
-          "</div>",
-        ].join("");
-      }
-      return;
-    }
-
-    var projIconEl = _el(CONSTANTS.DOM.TL_PROJ_ICON);
-    if (projIconEl) {
-      projIconEl.style.background = project.gradColor;
-      projIconEl.innerHTML = '<i class="fa-solid fa-folder"></i>';
-    }
-
-    var projNameEl = _el(CONSTANTS.DOM.TL_PROJ_NAME);
-    if (projNameEl) projNameEl.textContent = project.name;
-
-    var projStatsEl = _el(CONSTANTS.DOM.TL_PROJ_STATS);
-    if (projStatsEl) projStatsEl.textContent = project.stats;
-
-    var subtitleEl = _el(CONSTANTS.DOM.TIMELINE_SUBTITLE);
-    if (subtitleEl) subtitleEl.textContent = project.subtitle;
-
-    var phaseEl = _el(CONSTANTS.DOM.TIMELINE_PHASE);
-    if (phaseEl) {
-      phaseEl.className = "badge " + project.phaseClass;
-      phaseEl.textContent = project.phase;
-    }
-
-    var dotsEl = _el(CONSTANTS.DOM.TL_PROJ_DOTS);
-    if (dotsEl) {
-      dotsEl.innerHTML = timeline.projects
-        .map(function (_, i) {
-          return (
-            '<span class="tl-dot ' + (i === index ? "active" : "") + '"></span>'
-          );
-        })
-        .join("");
-    }
-
-    var idxEl = _el(CONSTANTS.DOM.TL_CURRENT_IDX);
-    if (idxEl) idxEl.textContent = index + 1;
-
-    var totalEl = _el(CONSTANTS.DOM.TL_TOTAL_COUNT);
-    if (totalEl) totalEl.textContent = total;
-
-    _renderTimelineSteps(project);
-
-    Logger.debug("DASHBOARD", "Timeline rendered → " + project.name);
-  }
-
-  function _renderTimelineSteps(project) {
-    var timelineEl = _el(CONSTANTS.DOM.TIMELINE_CONTENT);
-    if (!timelineEl) return;
-
-    var phases = _buildTimelinePhases(project);
-
-    var html = "";
-    phases.forEach(function (step, index) {
-      var circleContent = "";
-      if (step.status === "done") {
-        circleContent = '<i class="fa-solid fa-check"></i>';
-      } else if (step.status === "active") {
-        circleContent = [
-          '<span class="loader-dot"></span>',
-          '<span class="loader-dot"></span>',
-          '<span class="loader-dot"></span>',
-        ].join("");
-      } else {
-        circleContent = "<span>" + (index + 1) + "</span>";
-      }
-
-      var stepClass =
-        step.status === "done"
-          ? "done"
-          : step.status === "active"
-            ? "active"
-            : "";
-
-      html += [
-        '<div class="tl-step ' + stepClass + '">',
-        '  <div class="tl-circle">' + circleContent + "</div>",
-        '  <div class="tl-info">',
-        "    <h5>" + _escapeHtml(step.name) + "</h5>",
-        "    <span>" + _escapeHtml(step.date) + "</span>",
-        "  </div>",
-        "</div>",
-      ].join("");
-
-      if (index < phases.length - 1) {
-        var barDone = step.status === "done";
-        html += '<div class="tl-bar ' + (barDone ? "done" : "") + '"></div>';
-      }
-    });
-
-    timelineEl.classList.add("switching");
-    setTimeout(function () {
-      timelineEl.innerHTML = html;
-      setTimeout(function () {
-        timelineEl.classList.remove("switching");
-      }, 50);
-    }, 200);
-  }
-
-  function _buildTimelinePhases(project) {
-    var S = CONSTANTS.STATUS.REQUIREMENT;
-
-    var reqs = project.requirements || [];
-    var currentReq =
-      reqs.find(function (r) {
-        return r.isActive;
-      }) || reqs[0];
-
-    var currentStatus = currentReq ? currentReq.status : "";
-
-    var phaseOrder = [
-      S.SUBMITTED,
-      S.UNDER_REVIEW,
-      S.APPROVED,
-      S.IN_PROGRESS,
-      S.COMPLETED,
-    ];
-
-    var currentPhaseIdx = phaseOrder.indexOf(currentStatus);
-
-    var phaseLabels = {
-      [S.SUBMITTED]: "Submitted",
-      [S.UNDER_REVIEW]: "Reviewed",
-      [S.APPROVED]: "Approved",
-      [S.IN_PROGRESS]: "Development",
-      [S.COMPLETED]: "Delivery",
-    };
-
-    var phaseDates = {
-      [S.SUBMITTED]: currentReq ? currentReq.submittedDate : "—",
-      [S.UNDER_REVIEW]: "—",
-      [S.APPROVED]: "—",
-      [S.IN_PROGRESS]: "—",
-      [S.COMPLETED]: "—",
-    };
-
-    return phaseOrder.map(function (phase, i) {
-      var phaseStatus;
-      if (currentPhaseIdx < 0) {
-        phaseStatus = "pending";
-      } else if (i < currentPhaseIdx) {
-        phaseStatus = "done";
-      } else if (i === currentPhaseIdx) {
-        phaseStatus = "active";
-      } else {
-        phaseStatus = "pending";
-      }
-
-      return {
-        name: phaseLabels[phase] || phase,
-        date: phaseDates[phase] || "—",
-        status: phaseStatus,
-      };
-    });
-  }
-
   /**
-   * Render recent task activity card
-   * Shows recent tasks (all statuses) instead of approval queue
+   * Render "My Projects" — every project with its related tasks.
+   * Replaces the old Project Timeline + Recent Task Activity cards.
    */
-  function _renderApprovals() {
-    var tasks = AppState.get("tasks");
-    var allTasks = tasks.list || [];
-    var container = document.querySelector("#page-dashboard .approval-grid");
-
+  function _renderProjects() {
+    var container = document.querySelector("#page-dashboard .projects-list");
     if (!container) return;
 
-    // ── Empty state ──
-    if (allTasks.length === 0) {
+    var projects = AppState.get("timeline").projects || [];
+    var allTasks = AppState.get("tasks").list || [];
+
+    var subtitleEl = document.getElementById("projectsSubtitle");
+
+    if (projects.length === 0) {
+      if (subtitleEl) subtitleEl.textContent = "No projects yet";
       container.innerHTML = [
-        '<div style="grid-column:1/-1;text-align:center;',
-        'padding:32px;color:var(--text-4)">',
-        '  <i class="fa-solid fa-list-check" ',
-        '    style="font-size:32px;color:var(--text-5);',
-        '    margin-bottom:12px;display:block"></i>',
-        '  <strong style="color:var(--text);font-size:14px">',
-        "    No tasks yet</strong><br>",
-        '  <span style="font-size:13px">',
-        "    Tasks will appear here once your team proposes them.</span>",
+        '<div style="text-align:center;padding:24px;',
+        'color:var(--text-4);font-size:13px">',
+        '  <i class="fa-solid fa-folder-open" ',
+        '    style="font-size:24px;opacity:0.3;margin-bottom:8px;display:block"></i>',
+        "  Projects from your purchased packages will appear here",
         "</div>",
       ].join("");
       return;
     }
 
-    // ── Sort tasks: client-action first, then team-side, then closed ──
-    var S = CONSTANTS.STATUS.TASK;
-    var statusOrder = {};
-    statusOrder[S.PENDING_APPROVAL] = 1;
-    statusOrder[S.PENDING_COMPLETION_APPROVAL] = 2;
-    statusOrder[S.REWORK_REQUIRED] = 3;
-    statusOrder[S.DRAFT] = 4;
-    statusOrder[S.APPROVED] = 5;
-    statusOrder[S.COMPLETED] = 6;
-    statusOrder[S.CLOSED] = 7;
+    var totalTasks = 0;
 
-    var sortedTasks = allTasks.slice().sort(function (a, b) {
-      var orderA = statusOrder[a.status] || 99;
-      var orderB = statusOrder[b.status] || 99;
-      return orderA - orderB;
-    });
+    var html = projects
+      .map(function (project) {
+        var projectTasks = allTasks.filter(function (t) {
+          return (
+            (t.projectId && t.projectId === project.id) ||
+            (t.projectDisplay && t.projectDisplay === project.name)
+          );
+        });
+        totalTasks += projectTasks.length;
 
-    // ── Take top 4 most relevant ──
-    var displayTasks = sortedTasks.slice(0, 4);
+        var taskRows = projectTasks.slice(0, 6).map(function (task) {
+          var sc = task.statusClass || "";
+          return [
+            '<div class="pb-task">',
+            '  <span class="task-status-pill ' + sc + '">'
+              + _escapeHtml(task.status) + "</span>",
+            '  <span class="pb-task-name">'
+              + _escapeHtml(_truncate(task.taskName || "Untitled task", 48))
+              + "</span>",
+            '  <span class="pb-task-hrs">' + (task.estimatedHours || 0) + "h</span>",
+            "</div>",
+          ].join("");
+        });
 
-    // ── Side color by status ──
-    function _getSideColor(status) {
-      if (status === S.PENDING_APPROVAL) return "amber";
-      if (status === S.PENDING_COMPLETION_APPROVAL) return "amber";
-      if (status === S.REWORK_REQUIRED) return "red";
-      if (status === S.DRAFT) return "blue";
-      if (status === S.APPROVED) return "blue";
-      if (status === S.COMPLETED) return "blue";
-      if (status === S.CLOSED) return "green";
-      return "blue";
-    }
+        var moreRow = "";
+        if (projectTasks.length > 6) {
+          moreRow =
+            '<button class="pb-task pb-task-more" onclick="navigateTo(\'tasks\')">'
+            + "+" + (projectTasks.length - 6) + " more tasks</button>";
+        }
 
-    // ── Icon by status ──
-    function _getStatusIcon(status) {
-      if (status === S.PENDING_APPROVAL) return "fa-clock";
-      if (status === S.PENDING_COMPLETION_APPROVAL) return "fa-clock";
-      if (status === S.REWORK_REQUIRED) return "fa-rotate-left";
-      if (status === S.DRAFT) return "fa-file-lines";
-      if (status === S.APPROVED) return "fa-spinner";
-      if (status === S.COMPLETED) return "fa-flag-checkered";
-      if (status === S.CLOSED) return "fa-circle-check";
-      return "fa-circle";
-    }
-
-    var html = displayTasks
-      .map(function (task) {
-        var sideColor = _getSideColor(task.status);
-        var statusIcon = _getStatusIcon(task.status);
-        var hours = task.estimatedHours || 0;
-        var reqDisplay = task.requirementDisplay
-          ? _truncate(task.requirementDisplay, 40)
-          : "No requirement";
+        var tasksBlock;
+        if (projectTasks.length === 0) {
+          tasksBlock =
+            '<div class="pb-task pb-task-empty">No tasks yet for this project</div>';
+        } else {
+          tasksBlock = taskRows.join("") + moreRow;
+        }
 
         return [
-          '<div class="approval-item">',
-          '  <div class="ap-side ' + sideColor + '"></div>',
-          '  <div class="ap-body">',
-          '    <div class="ap-top">',
-          "      <h4>" + _escapeHtml(task.taskName) + "</h4>",
-          '      <span class="ap-time">',
-          '        <i class="fa-solid ' + statusIcon + '"></i> ',
-          "        " + _escapeHtml(task.status),
-          "      </span>",
+          '<div class="project-block">',
+          '  <div class="pb-head">',
+          '    <div class="pb-icon" style="background:' + project.gradColor + '">',
+          '      <i class="fa-solid fa-folder"></i>',
           "    </div>",
-          "    <p>",
-          '      <i class="fa-solid fa-folder" style="margin-right:6px;font-size:10px;color:var(--text-4)"></i>',
-          "      " + _escapeHtml(task.projectDisplay || "No project"),
-          '      <span style="color:var(--text-4);margin:0 8px">·</span>',
-          "      " + hours + " hrs estimated",
-          task.owner
-            ? ' <span style="color:var(--text-4);margin:0 8px">·</span> ' +
-              '<i class="fa-regular fa-user" style="font-size:10px;margin-right:4px"></i>' +
-              _escapeHtml(task.owner)
-            : "",
-          "    </p>",
-          '    <div class="ap-actions">',
-          '      <button class="btn btn-outline btn-sm" ',
-          "        onclick=\"navigateTo('" + CONSTANTS.PAGES.TASKS + "')\">",
-          '        <i class="fa-solid fa-eye"></i> View Details',
-          "      </button>",
+          '    <div class="pb-meta">',
+          "      <h4>" + _escapeHtml(project.name) + "</h4>",
+          "      <span>" + _escapeHtml(project.stats || "") + "</span>",
           "    </div>",
+          '    <span class="badge ' + (project.phaseClass || "badge-gray") + '">'
+          + _escapeHtml(project.phase || "") + "</span>",
           "  </div>",
+          '  <div class="pb-tasks">' + tasksBlock + "</div>",
           "</div>",
         ].join("");
       })
@@ -890,29 +686,18 @@ var DashboardModule = (function () {
 
     container.innerHTML = html;
 
-    // ── Update badge in card header ──
-    var card = container.closest(".card");
-    if (card) {
-      var badge = card.querySelector(".card-head .badge");
-      if (badge) {
-        var pendingCount = tasks.summary.pending || 0;
-        if (pendingCount > 0) {
-          badge.className = "badge badge-amber";
-          badge.innerHTML =
-            '<i class="fa-solid fa-clock"></i> ' + pendingCount + " Pending";
-        } else {
-          badge.className = "badge badge-success";
-          badge.innerHTML =
-            '<i class="fa-solid fa-circle-check"></i> All up to date';
-        }
-      }
+    if (subtitleEl) {
+      subtitleEl.textContent =
+        projects.length +
+        (projects.length === 1 ? " project" : " projects") +
+        " · " +
+        totalTasks +
+        (totalTasks === 1 ? " task" : " tasks");
     }
 
-    Logger.debug(
-      "DASHBOARD",
-      "Recent task activity rendered → " + displayTasks.length + " tasks",
-    );
+    Logger.debug("DASHBOARD", "Projects rendered → " + projects.length);
   }
+
   // =========================================================================
   // PRIVATE — Animation & Utility Helpers
   // =========================================================================
@@ -974,8 +759,7 @@ var DashboardModule = (function () {
     _renderImplementationCard();
     _renderActiveRequirements();
     _renderTaskProgress();
-    _renderTimeline();
-    _renderApprovals();
+    _renderProjects();
 
     Logger.timeEnd("DASHBOARD", "renderAll");
     Logger.info("DASHBOARD", "✅ Dashboard fully rendered");
@@ -1016,12 +800,12 @@ var DashboardModule = (function () {
     var unsubReqs = AppState.on("requirements:loaded", function () {
       _renderActiveRequirements();
       _renderStatsGrid();
-      _renderTimeline();
+      _renderProjects();
     });
 
     var unsubTasks = AppState.on("tasks:loaded", function () {
       _renderTaskProgress();
-      _renderApprovals();
+      _renderProjects();
       _renderStatsGrid();
     });
 
@@ -1031,13 +815,9 @@ var DashboardModule = (function () {
       _renderAlertBar();
     });
 
-    var unsubTimeline = AppState.on("timeline:switched", function () {
-      _renderTimeline();
-    });
-
     var unsubApproved = AppState.on("task:approved", function () {
-      _renderApprovals();
       _renderTaskProgress();
+      _renderProjects();
       _renderStatsGrid();
     });
 
@@ -1047,7 +827,6 @@ var DashboardModule = (function () {
       unsubReqs,
       unsubTasks,
       unsubHours,
-      unsubTimeline,
       unsubApproved,
     ];
   }
@@ -1083,10 +862,6 @@ var DashboardModule = (function () {
     Logger.debug("DASHBOARD", "Waiting for state:ready...");
   }
 
-  function switchTimeline(direction) {
-    AppState.switchTimeline(direction);
-  }
-
   async function refresh() {
     Logger.info("DASHBOARD", "Full refresh requested");
 
@@ -1114,7 +889,6 @@ var DashboardModule = (function () {
   return {
     init: init,
     load: load,
-    switchTimeline: switchTimeline,
     refresh: refresh,
     destroy: destroy,
   };

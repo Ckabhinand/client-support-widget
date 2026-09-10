@@ -98,16 +98,35 @@ MOCK = '''
             getRecords: function (cfg) { return fetchAll(cfg.report_name); },
             getRecordById: function (cfg) {
               var rows = DATA[cfg.report_name] || [];
-              var hit = rows.filter(function (r) { return r.ID === cfg.id; })[0] || rows[0] || null;
+              var hit = rows.filter(function (r) { return r.ID === cfg.id; })[0] || null;
               return Promise.resolve({ data: hit });
             },
             getRecordCount: function () { return Promise.resolve({ count: 0 }); },
             addRecords: function (cfg) {
-              var form = DATA[cfg.form_name] = DATA[cfg.form_name] || [];
-              var id = "NEW" + (form.length + 1);
+              // Form names differ from report names — map so created
+              // records land in the bucket the app reads from.
+              var FORM_TO_REPORT = {
+                Support_Contract: 'Support_Contract_Report',
+                Requirement: 'Requirement_Report',
+                Proposed_Tasks: 'Proposed_Tasks_Report',
+                Pricing: 'Pricing_Report',
+                Promotion: 'Promotion_Report',
+                Bug_Report: 'Bug_Report_Report'
+              };
+              var bucketName = FORM_TO_REPORT[cfg.form_name] || cfg.form_name;
+              var form = DATA[bucketName] = DATA[bucketName] || [];
+              var id = 'NEW' + (form.length + 1);
               var rec = Object.assign({ ID: id }, (cfg.payload && cfg.payload.data) || {});
               form.push(rec);
-              return Promise.resolve({ data: [{ ID: id, code: 3000 }] });
+              // Simulate the Zoho payment workflow on new contracts:
+              // Payment_Url appears ~2s after create, capture ~7s after.
+              if (cfg.form_name === 'Support_Contract') {
+                window.__updates = window.__updates || [];
+                window.__updates.push({ report: 'CREATE:' + bucketName, id: id, data: rec });
+                setTimeout(function () { rec.Payment_Url = 'https://pay.mock.example/' + id; }, 2000);
+                setTimeout(function () { rec.Payment_Status = 'Captured'; rec.Contract_Status = 'Active'; }, 7000);
+              }
+              return Promise.resolve({ data: { ID: id, code: 3000 } });
             },
             updateRecordById: function (cfg) {
               // Track write-backs so the waterfall reconciliation is

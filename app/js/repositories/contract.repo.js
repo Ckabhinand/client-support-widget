@@ -95,6 +95,7 @@ var ContractRepo = (function () {
       projectDisplay: projectDisplays.join(", "),
       projectId: projectIds[0] || "",
       email: H.getLookupDisplay(record, F.EMAIL),
+      emailId: H.getLookupId(record, F.EMAIL),
       currency: H.getString(record, F.CURRENCY, "USD"),
       planDisplay: H.getLookupDisplay(record, F.SUPPORT_PLAN),
       planId: H.getLookupId(record, F.SUPPORT_PLAN),

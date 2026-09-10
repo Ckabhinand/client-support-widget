@@ -312,8 +312,8 @@ var TaskRepo = (function () {
 
     /**
      * Client requests rework with reason.
-     * Can be called from Pending Approval, Approved, or Pending
-     * Completion Approval. → Rework Required
+     * Called from Pending Approval or Pending Completion Approval.
+     * → Rework Required
      */
     async function reject(id, reason, userEmail) {
         Logger.debug('REPO', 'TaskRepo.reject → ' + id);

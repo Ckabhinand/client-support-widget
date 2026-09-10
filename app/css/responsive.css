@@ -2,34 +2,14 @@
    RESPONSIVE STYLES — Compact Layout
    ========================================================================== */
 
-/* ===== TIMELINE SWITCHER RESPONSIVE ===== */
-@media (max-width: 768px) {
-  .timeline-controls {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .tl-project-bar {
-    flex-wrap: wrap;
-  }
-
-  .tl-proj-counter span:not(strong) {
-    display: none;
-  }
-}
-
+/* ===== MY PROJECTS RESPONSIVE ===== */
 @media (max-width: 480px) {
-  .timeline-nav {
-    gap: 2px;
-    padding: 2px;
+  .pb-tasks {
+    margin-left: 0;
   }
 
-  .tl-project-indicator {
-    padding: 0 3px;
-  }
-
-  .tl-proj-dots {
-    display: none;
+  .pb-head {
+    flex-wrap: wrap;
   }
 }
 
@@ -82,10 +62,6 @@
   .order-grid {
     grid-template-columns: 1fr;
   }
-
-    .approval-grid {
-        grid-template-columns: 1fr;
-    }
 }
 
 /* === Tablet (900px) === */
@@ -176,11 +152,6 @@
 
   .toolbar-filters {
     flex-direction: column;
-  }
-
-  .timeline {
-    overflow-x: auto;
-    padding-bottom: 10px;
   }
 
   .notif-dropdown {

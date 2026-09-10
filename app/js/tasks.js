@@ -5,7 +5,8 @@
 
    Draft                       → No action (team is drafting)
    Pending Approval            → Approve | Request Rework
-   Approved                    → Request Rework (team working)
+   Approved                    → No action (team working — no rework button
+                                 once the client has approved the start)
    Completed                   → No action (awaiting completion review setup)
    Pending Completion Approval → Approve Completion | Request Rework
    Rework Required             → Shows reason
@@ -32,7 +33,7 @@ var TasksModule = (function () {
 
     var _pendingRejection = {
         taskId : null,
-        mode   : null    // 'start' | 'inprogress' | 'completion'
+        mode   : null    // 'start' | 'completion'
     };
 
     // =========================================================================
@@ -264,14 +265,6 @@ var TasksModule = (function () {
                 + '<i class="fa-solid fa-rotate-left"></i> Request Rework</button>'
             );
 
-        } else if (task.status === S.APPROVED) {
-            // Team is working — client can request rework
-            actions.push(
-                '<button class="btn btn-ghost btn-sm task-btn-reject" onclick="TasksModule.openRejectModal(\''
-                + _escapeHtml(task.id) + '\', \'inprogress\')">'
-                + '<i class="fa-solid fa-rotate-left"></i> Request Rework</button>'
-            );
-
         } else if (task.status === S.PENDING_COMPLETION_APPROVAL) {
             // Level 2: Approve completion OR request rework
             actions.push(
@@ -294,7 +287,8 @@ var TasksModule = (function () {
             );
 
         } else {
-            // Draft, Completed, Closed, Rework without reason — no client action
+            // Draft, Approved, Completed, Closed, Rework without reason —
+            // no client action (once approved, no rework button)
             actions.push('<span class="task-no-action">—</span>');
         }
 
@@ -466,7 +460,6 @@ var TasksModule = (function () {
         if (info) {
             var msgs = {
                 'start'      : 'You are requesting rework before this task starts. Please explain what should change.',
-                'inprogress' : 'You are requesting rework on a task in progress. Please explain the issue.',
                 'completion' : 'You are requesting rework on the completed work. Please explain what needs to be addressed.'
             };
             info.textContent = msgs[mode] || 'Please provide a rejection reason.';
