@@ -864,14 +864,10 @@ var PricingModule = (function () {
       if (activeContract.emailId) {
         payload[F.EMAIL] = activeContract.emailId;
       }
-      // Project is a multi-select lookup — carry over ALL of the
-      // existing contract's projects (comma-separated IDs for Zoho).
-      var projectIds = (activeContract.projectIds && activeContract.projectIds.length)
-        ? activeContract.projectIds
-        : (activeContract.projectId ? [activeContract.projectId] : []);
-      if (projectIds.length) {
-        payload[F.PROJECT] = projectIds.join(",");
-      }
+      // NOTE: Project is intentionally NOT sent. The multi-select lookup
+      // rejects ID lists/strings here ("Invalid column value for Project"),
+      // and the form's Deluge on-submit script populates it from the
+      // email/client linkage — so only Email (and Client) are sent.
 
       Logger.info("PRICING", "Creating contract", payload);
 
