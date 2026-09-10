@@ -1647,25 +1647,42 @@
   font-size: 10px;
 }
 
-/* ===== TASK STATUS PILLS — 6 Status ===== */
-.task-status-pill.not-started {
+/* ===== TASK STATUS PILLS — 7 Status ===== */
+/* Draft → Pending Approval → Approved → Completed →
+   Pending Completion Approval → Closed (+ Rework Required) */
+.task-status-pill.draft {
   background: var(--bg-2);
   color: var(--text-4);
 }
 
-.task-status-pill.start-approval {
+.task-status-pill.pending-approval {
   background: var(--amber-soft);
   color: var(--amber-dark);
 }
 
-.task-status-pill.completion-approved {
-  background: var(--green-soft);
-  color: var(--green-dark);
+.task-status-pill.approved {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
 }
 
-.task-status-pill.rejected {
+.task-status-pill.completed {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+
+.task-status-pill.pending-completion-approval {
+  background: var(--amber-soft);
+  color: var(--amber-dark);
+}
+
+.task-status-pill.rework-required {
   background: var(--red-soft);
   color: var(--red-dark);
+}
+
+.task-status-pill.closed {
+  background: var(--green-soft);
+  color: var(--green-dark);
 }
 
 /* ===== FIX: Ensure action buttons in task rows are clickable ===== */

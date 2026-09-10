@@ -167,14 +167,30 @@ var CONSTANTS = (function () {
         },
 
         // ── Proposed Tasks ────────────────────────────────────────────────────
-        // ⚠️ These are the CONFIRMED updated values (not "Choice 1/2/3")
+        // 7-Status flow (updated 2026-09):
+        //   Draft → Pending Approval → Approved → Completed →
+        //   Pending Completion Approval → Closed
+        //   Rework Required = client rejected (start / working / completion)
         TASK: {
-            NOT_STARTED          : 'Not Started',
-            START_APPROVAL       : 'Start Approval',
-            IN_PROGRESS          : 'In Progress',
-            COMPLETED            : 'Completed',
-            COMPLETION_APPROVED  : 'Completion Approved',
-            TASK_REJECTED        : 'Task Rejected'
+            DRAFT                       : 'Draft',
+            PENDING_APPROVAL            : 'Pending Approval',
+            APPROVED                    : 'Approved',
+            COMPLETED                   : 'Completed',
+            PENDING_COMPLETION_APPROVAL : 'Pending Completion Approval',
+            REWORK_REQUIRED             : 'Rework Required',
+            CLOSED                      : 'Closed'
+        },
+
+        // Pre-migration statuses still stored on old records → new equivalent.
+        // Applied when a task DTO is built so the whole app only ever sees
+        // the 7 current statuses.
+        TASK_LEGACY: {
+            'Not Started'       : 'Pending Approval',
+            'Start Approval'    : 'Approved',
+            'In Progress'       : 'Approved',
+            'Completed'         : 'Pending Completion Approval',
+            'Completion Approved' : 'Closed',
+            'Task Rejected'     : 'Rework Required'
         },
 
         PAYMENT: {
@@ -542,12 +558,19 @@ var CONSTANTS = (function () {
     // TASK STATUS → CSS CLASS MAPPING (for task-status-pill)
     // =========================================================================
     var TASK_STATUS_CLASS = {
-        'Not Started'          : 'not-started',
-        'Start Approval'       : 'start-approval',
-        'In Progress'          : 'in-progress',
-        'Completed'            : 'completed',
-        'Completion Approved'  : 'completion-approved',
-        'Task Rejected'        : 'rejected'
+        'Draft'                       : 'draft',
+        'Pending Approval'            : 'pending-approval',
+        'Approved'                    : 'approved',
+        'Completed'                   : 'completed',
+        'Pending Completion Approval' : 'pending-completion-approval',
+        'Rework Required'             : 'rework-required',
+        'Closed'                      : 'closed',
+        // Legacy statuses (pre-migration records that slip through raw)
+        'Not Started'       : 'pending-approval',
+        'Start Approval'    : 'approved',
+        'In Progress'       : 'approved',
+        'Completion Approved' : 'closed',
+        'Task Rejected'     : 'rework-required'
     };
 
     // =========================================================================

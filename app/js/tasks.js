@@ -1,14 +1,15 @@
 /* ==========================================================================
    TASKS.JS — Tasks Page Module
 
-   6-Status Client Approval Flow:
+   7-Status Client Flow:
 
-   Not Started      → Approve | Reject
-   Start Approval   → No action (team working)
-   In Progress      → Reject
-   Completed        → Approve Completion | Reject
-   Completion Approved → No action (final)
-   Task Rejected    → Shows reason
+   Draft                       → No action (team is drafting)
+   Pending Approval            → Approve | Request Rework
+   Approved                    → Request Rework (team working)
+   Completed                   → No action (awaiting completion review setup)
+   Pending Completion Approval → Approve Completion | Request Rework
+   Rework Required             → Shows reason
+   Closed                      → No action (final — hours consumed)
    ========================================================================== */
 
 'use strict';
@@ -107,8 +108,8 @@ var TasksModule = (function () {
         var summary = AppState.get('tasks').summary;
         [
             { id: 'taskSummaryPending',   value: summary.pending },
-            { id: 'taskSummaryProgress',  value: summary.inProgress + summary.startApproval },
-            { id: 'taskSummaryCompleted', value: summary.completionApproved },
+            { id: 'taskSummaryProgress',  value: summary.inProgress },
+            { id: 'taskSummaryCompleted', value: summary.completed },
             { id: 'taskSummaryAll',       value: summary.total }
         ].forEach(function (card) {
             var el = _el(card.id);
@@ -123,8 +124,8 @@ var TasksModule = (function () {
         var summary = AppState.get('tasks').summary;
         var counts = {
             'pending'   : summary.pending,
-            'progress'  : summary.inProgress + summary.startApproval,
-            'completed' : summary.completionApproved,
+            'progress'  : summary.inProgress,
+            'completed' : summary.completed,
             'all'       : summary.total
         };
         Object.keys(counts).forEach(function (tab) {
@@ -250,8 +251,8 @@ var TasksModule = (function () {
         var S       = CONSTANTS.STATUS.TASK;
         var actions = [];
 
-        if (task.status === S.NOT_STARTED) {
-            // Level 1: Approve to start OR Reject
+        if (task.status === S.PENDING_APPROVAL) {
+            // Level 1: Approve to start OR request rework
             actions.push(
                 '<button class="btn btn-primary btn-sm" onclick="TasksModule.approveTask(\''
                 + _escapeHtml(task.id) + '\')">'
@@ -260,19 +261,19 @@ var TasksModule = (function () {
             actions.push(
                 '<button class="btn btn-ghost btn-sm task-btn-reject" onclick="TasksModule.openRejectModal(\''
                 + _escapeHtml(task.id) + '\', \'start\')">'
-                + '<i class="fa-solid fa-ban"></i> Reject</button>'
+                + '<i class="fa-solid fa-rotate-left"></i> Request Rework</button>'
             );
 
-        } else if (task.status === S.IN_PROGRESS) {
-            // In Progress: Client can reject
+        } else if (task.status === S.APPROVED) {
+            // Team is working — client can request rework
             actions.push(
                 '<button class="btn btn-ghost btn-sm task-btn-reject" onclick="TasksModule.openRejectModal(\''
                 + _escapeHtml(task.id) + '\', \'inprogress\')">'
-                + '<i class="fa-solid fa-ban"></i> Reject</button>'
+                + '<i class="fa-solid fa-rotate-left"></i> Request Rework</button>'
             );
 
-        } else if (task.status === S.COMPLETED) {
-            // Level 2: Approve completion OR Reject
+        } else if (task.status === S.PENDING_COMPLETION_APPROVAL) {
+            // Level 2: Approve completion OR request rework
             actions.push(
                 '<button class="btn btn-primary btn-sm" onclick="TasksModule.approveCompletion(\''
                 + _escapeHtml(task.id) + '\')">'
@@ -281,11 +282,11 @@ var TasksModule = (function () {
             actions.push(
                 '<button class="btn btn-ghost btn-sm task-btn-reject" onclick="TasksModule.openRejectModal(\''
                 + _escapeHtml(task.id) + '\', \'completion\')">'
-                + '<i class="fa-solid fa-ban"></i> Reject</button>'
+                + '<i class="fa-solid fa-rotate-left"></i> Request Rework</button>'
             );
 
-        } else if (task.status === S.TASK_REJECTED && task.rejectionReason) {
-            // Show rejection reason
+        } else if (task.status === S.REWORK_REQUIRED && task.rejectionReason) {
+            // Show rework reason
             actions.push(
                 '<span class="task-rejection-reason" title="' + _escapeHtml(task.rejectionReason) + '">'
                 + '<i class="fa-solid fa-circle-info"></i> '
@@ -293,7 +294,7 @@ var TasksModule = (function () {
             );
 
         } else {
-            // Start Approval, Completion Approved — no client action
+            // Draft, Completed, Closed, Rework without reason — no client action
             actions.push('<span class="task-no-action">—</span>');
         }
 
@@ -446,7 +447,7 @@ var TasksModule = (function () {
         Logger.info('TASKS', 'approveCompletion → ' + taskId);
         try {
             await AppState.dispatch('APPROVE_COMPLETION', { taskId: taskId });
-            showToast('Completion Approved', 'Task approved. Support hours updated.');
+            showToast('Completion Approved', 'Task closed. Support hours updated.');
         } catch (err) {
             Logger.error('TASKS', 'approveCompletion FAILED', err);
             showToast('Error', 'Could not approve completion. Please try again.');
@@ -464,9 +465,9 @@ var TasksModule = (function () {
 
         if (info) {
             var msgs = {
-                'start'      : 'You are rejecting this task before it starts. Please explain why.',
-                'inprogress' : 'You are rejecting this task while it is in progress. Please explain the issue.',
-                'completion' : 'You are rejecting the completed work. Please explain what needs to be addressed.'
+                'start'      : 'You are requesting rework before this task starts. Please explain what should change.',
+                'inprogress' : 'You are requesting rework on a task in progress. Please explain the issue.',
+                'completion' : 'You are requesting rework on the completed work. Please explain what needs to be addressed.'
             };
             info.textContent = msgs[mode] || 'Please provide a rejection reason.';
         }
@@ -489,7 +490,7 @@ var TasksModule = (function () {
         var reason   = reasonEl ? reasonEl.value.trim() : '';
 
         if (!reason) {
-            showToast('Required', 'Please enter a rejection reason.');
+            showToast('Required', 'Please enter the rework details.');
             if (reasonEl) reasonEl.focus();
             return;
         }
@@ -504,7 +505,7 @@ var TasksModule = (function () {
                 taskId : _pendingRejection.taskId,
                 reason : reason
             });
-            showToast('Task Rejected', 'Task rejected. The team has been notified.');
+            showToast('Rework Requested', 'The team has been notified and will address your feedback.');
             closeRejectModal();
         } catch (err) {
             Logger.error('TASKS', 'submitReject FAILED', err);

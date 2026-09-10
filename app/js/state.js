@@ -1,15 +1,18 @@
 /* ==========================================================================
    STATE.JS — Application State Management
 
-   6-Status Task Flow:
-     Not Started → Start Approval → In Progress → Completed → Completion Approved
-     Any actionable → Task Rejected (with reason)
+   7-Status Task Flow:
+     Draft → Pending Approval → Approved → Completed →
+     Pending Completion Approval → Closed
+     Rework Required = client rejected (start / working / completion review)
 
    ACTIONS:
-     'APPROVE_TASK'            → Not Started → Start Approval
-     'REJECT_TASK'             → Any → Task Rejected (with reason)
-     'APPROVE_COMPLETION'      → Completed → Completion Approved + hours consumed
-     'BULK_APPROVE_TASKS'      → Multiple Not Started → Start Approval
+     'APPROVE_TASK'            → Pending Approval → Approved
+     'REJECT_TASK'             → Pending Approval | Approved | Pending
+                                 Completion Approval → Rework Required (+ reason)
+     'APPROVE_COMPLETION'      → Pending Completion Approval → Closed
+                                 (waterfall then consumes Closed task hours)
+     'BULK_APPROVE_TASKS'      → Multiple Pending Approval → Approved
      'CREATE_REQUIREMENT'
      'REFRESH_CONTRACTS'
      'REFRESH_REQUIREMENTS'
@@ -160,9 +163,9 @@ var AppState = (function () {
 
     /**
      * Derive task sub-lists:
-     * Pending  = Not Started + Completed (both need client action)
-     * Progress = Start Approval + In Progress (team is working)
-     * Completed = Completion Approved (fully done)
+     * Pending   = Pending Approval + Pending Completion Approval (client action)
+     * Progress  = Draft + Approved + Completed + Rework Required (team side)
+     * Completed = Closed (fully done)
      */
     function _deriveTaskLists() {
         var S   = CONSTANTS.STATUS.TASK;
@@ -170,20 +173,22 @@ var AppState = (function () {
 
         _state.tasks.pending = all.filter(function (t) {
             return (
-                t.status === S.NOT_STARTED ||
-                t.status === S.COMPLETED
+                t.status === S.PENDING_APPROVAL ||
+                t.status === S.PENDING_COMPLETION_APPROVAL
             );
         });
 
         _state.tasks.inProgress = all.filter(function (t) {
             return (
-                t.status === S.START_APPROVAL ||
-                t.status === S.IN_PROGRESS
+                t.status === S.DRAFT ||
+                t.status === S.APPROVED ||
+                t.status === S.COMPLETED ||
+                t.status === S.REWORK_REQUIRED
             );
         });
 
         _state.tasks.completed = all.filter(function (t) {
-            return t.status === S.COMPLETION_APPROVED;
+            return t.status === S.CLOSED;
         });
     }
 
@@ -192,40 +197,51 @@ var AppState = (function () {
         var all = _state.tasks.list;
 
         var summary = {
-            total              : all.length,
-            notStarted         : 0,
-            startApproval      : 0,
-            inProgress         : 0,
-            completed          : 0,
-            completionApproved : 0,
-            rejected           : 0,
-            totalHours         : 0,
-            // Backward-compatible aliases for UI
-            pending            : 0
+            total                     : all.length,
+            draft                     : 0,
+            pendingApproval           : 0,
+            approved                  : 0,
+            teamCompleted             : 0,   // "Completed" = team done, awaiting client sign-off
+            pendingCompletionApproval : 0,
+            reworkRequired            : 0,
+            closed                    : 0,
+            totalHours                : 0,
+            // Aggregated aliases for the UI
+            pending                   : 0,   // client action needed (PA + PCA)
+            inProgress                : 0,   // team-side, not closed
+            completed                 : 0    // fully done (= Closed)
         };
 
         all.forEach(function (t) {
             summary.totalHours += t.estimatedHours || 0;
             switch (t.status) {
-                case S.NOT_STARTED:
-                    summary.notStarted++;
+                case S.DRAFT:
+                    summary.draft++;
+                    summary.inProgress++;
+                    break;
+                case S.PENDING_APPROVAL:
+                    summary.pendingApproval++;
                     summary.pending++;
                     break;
-                case S.START_APPROVAL:
-                    summary.startApproval++;
-                    break;
-                case S.IN_PROGRESS:
+                case S.APPROVED:
+                    summary.approved++;
                     summary.inProgress++;
                     break;
                 case S.COMPLETED:
-                    summary.completed++;
+                    summary.teamCompleted++;
+                    summary.inProgress++;
+                    break;
+                case S.PENDING_COMPLETION_APPROVAL:
+                    summary.pendingCompletionApproval++;
                     summary.pending++;
                     break;
-                case S.COMPLETION_APPROVED:
-                    summary.completionApproved++;
+                case S.REWORK_REQUIRED:
+                    summary.reworkRequired++;
+                    summary.inProgress++;
                     break;
-                case S.TASK_REJECTED:
-                    summary.rejected++;
+                case S.CLOSED:
+                    summary.closed++;
+                    summary.completed++;
                     break;
             }
         });
@@ -250,13 +266,14 @@ var AppState = (function () {
         var task   = _state.tasks.list[index];
         var status = task.status;
 
-        task.isNotStarted         = status === S.NOT_STARTED;
-        task.isStartApproval      = status === S.START_APPROVAL;
-        task.isInProgress         = status === S.IN_PROGRESS;
-        task.isCompleted          = status === S.COMPLETED;
-        task.isCompletionApproved = status === S.COMPLETION_APPROVED;
-        task.isRejected           = status === S.TASK_REJECTED;
-        task.statusClass          = CONSTANTS.TASK_STATUS_CLASS[status] || 'not-started';
+        task.isDraft                     = status === S.DRAFT;
+        task.isPendingApproval           = status === S.PENDING_APPROVAL;
+        task.isApproved                  = status === S.APPROVED;
+        task.isCompleted                 = status === S.COMPLETED;
+        task.isPendingCompletionApproval = status === S.PENDING_COMPLETION_APPROVAL;
+        task.isReworkRequired            = status === S.REWORK_REQUIRED;
+        task.isClosed                    = status === S.CLOSED;
+        task.statusClass                 = CONSTANTS.TASK_STATUS_CLASS[status] || 'draft';
 
         _deriveTaskLists();
         _recalcTaskSummary();
@@ -276,7 +293,7 @@ var AppState = (function () {
     // =========================================================================
 
     /**
-     * APPROVE_TASK — Not Started → Start Approval
+     * APPROVE_TASK — Pending Approval → Approved
      */
     async function _handleApproveTask(payload) {
         var taskId    = payload.taskId;
@@ -290,7 +307,7 @@ var AppState = (function () {
             await TaskRepo.approve(taskId, userEmail);
 
             _updateTaskInList(taskId, {
-                status          : CONSTANTS.STATUS.TASK.START_APPROVAL,
+                status          : CONSTANTS.STATUS.TASK.APPROVED,
                 rejectionReason : ''
             });
 
@@ -305,7 +322,8 @@ var AppState = (function () {
     }
 
     /**
-     * REJECT_TASK — Any → Task Rejected (with reason)
+     * REJECT_TASK — Pending Approval | Approved | Pending Completion
+     * Approval → Rework Required (with reason)
      */
     async function _handleRejectTask(payload) {
         var taskId    = payload.taskId;
@@ -321,7 +339,7 @@ var AppState = (function () {
             await TaskRepo.reject(taskId, reason, userEmail);
 
             _updateTaskInList(taskId, {
-                status          : CONSTANTS.STATUS.TASK.TASK_REJECTED,
+                status          : CONSTANTS.STATUS.TASK.REWORK_REQUIRED,
                 rejectionReason : reason
             });
 
@@ -336,7 +354,8 @@ var AppState = (function () {
     }
 
     /**
-     * APPROVE_COMPLETION — Completed → Completion Approved + hours consumed
+     * APPROVE_COMPLETION — Pending Completion Approval → Closed
+     * (the waterfall then consumes Closed task hours)
      */
     async function _handleApproveCompletion(payload) {
         var taskId    = payload.taskId;
@@ -350,7 +369,7 @@ var AppState = (function () {
             await TaskRepo.approveCompletion(taskId, userEmail);
 
             _updateTaskInList(taskId, {
-                status          : CONSTANTS.STATUS.TASK.COMPLETION_APPROVED,
+                status          : CONSTANTS.STATUS.TASK.CLOSED,
                 rejectionReason : ''
             });
 
@@ -370,7 +389,7 @@ var AppState = (function () {
     }
 
     /**
-     * BULK_APPROVE_TASKS — Multiple Not Started → Start Approval
+     * BULK_APPROVE_TASKS — Multiple Pending Approval → Approved
      */
     async function _handleBulkApprove(payload) {
         var taskIds   = payload.taskIds || [];
@@ -384,7 +403,7 @@ var AppState = (function () {
 
             taskIds.forEach(function (id) {
                 _updateTaskInList(id, {
-                    status: CONSTANTS.STATUS.TASK.START_APPROVAL
+                    status: CONSTANTS.STATUS.TASK.APPROVED
                 });
             });
 
@@ -440,7 +459,7 @@ var AppState = (function () {
             _setLoading(false, 'tasks');
             _emit('tasks:loaded', _state.tasks);
 
-            // Task statuses may have changed (e.g. Completion Approved by
+            // Task statuses may have changed (e.g. Closed by
             // the team) → recompute the consumed-hours waterfall.
             await _reconcileConsumedHours();
 
@@ -633,7 +652,7 @@ var AppState = (function () {
 
             _buildTimelineProjects();
 
-            // ── Reconcile consumed hours from Completion Approved tasks ──
+            // ── Reconcile consumed hours from Closed tasks ──
             // (fetch → check approval status → waterfall → write back drift)
             await _reconcileConsumedHours();
 
@@ -768,7 +787,7 @@ var AppState = (function () {
     // CONSUMED HOURS RECONCILIATION (waterfall)
     //
     // Recomputes every purchased contract's Consumed_Hours from the
-    // client's Completion Approved tasks:
+    // client's Closed tasks:
     //   1. Each approved task's type is resolved via its requirement →
     //      contract → Contract_Type (defaults to Support).
     //   2. Per type, the total approved task hours waterfall through the
@@ -808,7 +827,7 @@ var AppState = (function () {
         totals[CT.IMPLEMENTATION] = 0;
 
         (_state.tasks.list || []).forEach(function (t) {
-            if (t.status !== S.COMPLETION_APPROVED) return;
+            if (t.status !== S.CLOSED) return;
             var cid  = reqContract[t.requirementId];
             var type = (cid && typeById[cid]) || CT.SUPPORT;
             totals[type] += (t.estimatedHours || 0);

@@ -1292,8 +1292,8 @@
       <div class="modal">
         <div class="modal-head">
           <div>
-            <h2>Reject Task</h2>
-            <p id="rejectionTaskInfo">Please provide a rejection reason.</p>
+            <h2>Request Rework</h2>
+            <p id="rejectionTaskInfo">Please describe the rework needed.</p>
           </div>
           <button class="modal-x" onclick="TasksModule.closeRejectModal()">
             <i class="fa-solid fa-xmark"></i>
@@ -1302,14 +1302,14 @@
         <div class="modal-body">
           <div class="form-field">
             <label>
-              Rejection Reason
+              Rework Details
               <span class="req-star">*</span>
             </label>
             <textarea
               id="rejectionReason"
               class="form-input"
               rows="5"
-              placeholder="Please explain why you are rejecting this task so the team can address it..."
+              placeholder="Please describe what needs to change so the team can address it..."
             ></textarea>
             <span class="field-hint">
               Your feedback helps the team understand what needs to change.
@@ -1324,8 +1324,8 @@
             Cancel
           </button>
           <button class="btn btn-primary" onclick="TasksModule.submitReject()">
-            <i class="fa-solid fa-ban"></i>
-            Submit Rejection
+            <i class="fa-solid fa-rotate-left"></i>
+            Request Rework
           </button>
         </div>
       </div>

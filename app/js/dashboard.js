@@ -208,9 +208,12 @@ var DashboardModule = (function () {
       // Get latest task to show recency
       var allTasks = AppState.get("tasks").list || [];
       var inProgressTasks = allTasks.filter(function (t) {
+        var S = CONSTANTS.STATUS.TASK;
         return (
-          t.status === CONSTANTS.STATUS.TASK.IN_PROGRESS ||
-          t.status === CONSTANTS.STATUS.TASK.APPROVED
+          t.status === S.DRAFT ||
+          t.status === S.APPROVED ||
+          t.status === S.COMPLETED ||
+          t.status === S.REWORK_REQUIRED
         );
       }).length;
 
@@ -554,21 +557,18 @@ var DashboardModule = (function () {
 
     miniList.innerHTML = showTasks
       .map(function (task) {
+        var TS = CONSTANTS.STATUS.TASK;
         var statusMap = {
-          [CONSTANTS.STATUS.TASK.COMPLETED]: { cls: "done", icon: "fa-check" },
-          [CONSTANTS.STATUS.TASK.IN_PROGRESS]: {
-            cls: "active",
-            icon: "fa-spinner",
-          },
-          [CONSTANTS.STATUS.TASK.PENDING_APPROVAL]: {
+          [TS.DRAFT]: { cls: "pending", icon: "fa-file-lines" },
+          [TS.PENDING_APPROVAL]: { cls: "pending", icon: "fa-clock" },
+          [TS.APPROVED]: { cls: "active", icon: "fa-spinner" },
+          [TS.COMPLETED]: { cls: "pending", icon: "fa-flag-checkered" },
+          [TS.PENDING_COMPLETION_APPROVAL]: {
             cls: "pending",
             icon: "fa-clock",
           },
-          [CONSTANTS.STATUS.TASK.APPROVED]: {
-            cls: "active",
-            icon: "fa-spinner",
-          },
-          [CONSTANTS.STATUS.TASK.PAUSED]: { cls: "pending", icon: "fa-pause" },
+          [TS.REWORK_REQUIRED]: { cls: "pending", icon: "fa-rotate-left" },
+          [TS.CLOSED]: { cls: "done", icon: "fa-check" },
         };
 
         var sm = statusMap[task.status] || { cls: "pending", icon: "fa-clock" };
@@ -801,16 +801,16 @@ var DashboardModule = (function () {
       return;
     }
 
-    // ── Sort tasks: pending first, then in-progress, then completed ──
+    // ── Sort tasks: client-action first, then team-side, then closed ──
     var S = CONSTANTS.STATUS.TASK;
     var statusOrder = {};
     statusOrder[S.PENDING_APPROVAL] = 1;
-    statusOrder[S.IN_PROGRESS] = 2;
-    statusOrder[S.APPROVED] = 3;
-    statusOrder[S.PAUSED] = 4;
-    statusOrder[S.CONCERN_RAISED] = 5;
+    statusOrder[S.PENDING_COMPLETION_APPROVAL] = 2;
+    statusOrder[S.REWORK_REQUIRED] = 3;
+    statusOrder[S.DRAFT] = 4;
+    statusOrder[S.APPROVED] = 5;
     statusOrder[S.COMPLETED] = 6;
-    statusOrder[S.DISCARDED] = 7;
+    statusOrder[S.CLOSED] = 7;
 
     var sortedTasks = allTasks.slice().sort(function (a, b) {
       var orderA = statusOrder[a.status] || 99;
@@ -824,24 +824,24 @@ var DashboardModule = (function () {
     // ── Side color by status ──
     function _getSideColor(status) {
       if (status === S.PENDING_APPROVAL) return "amber";
-      if (status === S.IN_PROGRESS) return "blue";
+      if (status === S.PENDING_COMPLETION_APPROVAL) return "amber";
+      if (status === S.REWORK_REQUIRED) return "red";
+      if (status === S.DRAFT) return "blue";
       if (status === S.APPROVED) return "blue";
-      if (status === S.COMPLETED) return "green";
-      if (status === S.PAUSED) return "amber";
-      if (status === S.CONCERN_RAISED) return "red";
-      if (status === S.DISCARDED) return "red";
+      if (status === S.COMPLETED) return "blue";
+      if (status === S.CLOSED) return "green";
       return "blue";
     }
 
     // ── Icon by status ──
     function _getStatusIcon(status) {
       if (status === S.PENDING_APPROVAL) return "fa-clock";
-      if (status === S.IN_PROGRESS) return "fa-spinner";
-      if (status === S.APPROVED) return "fa-check";
-      if (status === S.COMPLETED) return "fa-circle-check";
-      if (status === S.PAUSED) return "fa-pause";
-      if (status === S.CONCERN_RAISED) return "fa-flag";
-      if (status === S.DISCARDED) return "fa-xmark";
+      if (status === S.PENDING_COMPLETION_APPROVAL) return "fa-clock";
+      if (status === S.REWORK_REQUIRED) return "fa-rotate-left";
+      if (status === S.DRAFT) return "fa-file-lines";
+      if (status === S.APPROVED) return "fa-spinner";
+      if (status === S.COMPLETED) return "fa-flag-checkered";
+      if (status === S.CLOSED) return "fa-circle-check";
       return "fa-circle";
     }
 

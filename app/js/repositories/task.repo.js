@@ -1,9 +1,20 @@
 /* ==========================================================================
    TASK.REPO.JS — Proposed Tasks Repository
 
-   Simplified 6-Status Flow:
-     Not Started → Start Approval → In Progress → Completed → Completion Approved
-     Any actionable status → Task Rejected (with reason)
+   7-Status Flow:
+     Draft → Pending Approval → Approved → Completed →
+     Pending Completion Approval → Closed
+     Rework Required = client rejected (start / working / completion review)
+
+   Client actions:
+     approve()           → Pending Approval → Approved
+     reject()            → Pending Approval | Approved | Pending Completion
+                           Approval → Rework Required (+ reason)
+     approveCompletion() → Pending Completion Approval → Closed
+     bulkApprove()       → multiple Pending Approval → Approved
+
+   NOTE: approveCompletion() only updates STATUS. Consumed hours are
+   recomputed by the waterfall in state.js (Closed tasks consume).
 
    PUBLIC METHODS:
      TaskRepo.getForUser(userEmail)
@@ -34,53 +45,66 @@ var TaskRepo = (function () {
     function _toDTO(record, index) {
         if (!record) return null;
 
-        var status        = H.getString(record, F.STATUS, '');
-        var priority      = H.getString(record, F.PRIORITY, '');
-        var statusClass   = CONSTANTS.TASK_STATUS_CLASS[status]  || 'not-started';
-        var priorityClass = CONSTANTS.PRIORITY_CLASS[priority]   || 'low';
-        var percent       = H.getInt(record, F.PERCENT, 0);
-        var estHours      = H.getInt(record, F.ESTIMATED_HOURS, 0);
+        var rawStatus      = H.getString(record, F.STATUS, '');
+        var status         = _normalizeStatus(rawStatus);
+        var priority       = H.getString(record, F.PRIORITY, '');
+        var statusClass    = CONSTANTS.TASK_STATUS_CLASS[status]  || 'draft';
+        var priorityClass  = CONSTANTS.PRIORITY_CLASS[priority]   || 'low';
+        var percent        = H.getInt(record, F.PERCENT, 0);
+        var estHours       = H.getInt(record, F.ESTIMATED_HOURS, 0);
 
         var id = H.getString(record, 'ID', '');
 
         var S = CONSTANTS.STATUS.TASK;
 
-        var isNotStarted         = status === S.NOT_STARTED;
-        var isStartApproval      = status === S.START_APPROVAL;
-        var isInProgress         = status === S.IN_PROGRESS;
-        var isCompleted          = status === S.COMPLETED;
-        var isCompletionApproved = status === S.COMPLETION_APPROVED;
-        var isRejected           = status === S.TASK_REJECTED;
+        var isDraft                       = status === S.DRAFT;
+        var isPendingApproval             = status === S.PENDING_APPROVAL;
+        var isApproved                    = status === S.APPROVED;
+        var isCompleted                   = status === S.COMPLETED;
+        var isPendingCompletionApproval   = status === S.PENDING_COMPLETION_APPROVAL;
+        var isReworkRequired              = status === S.REWORK_REQUIRED;
+        var isClosed                      = status === S.CLOSED;
 
         var displayId = id
             ? 'TASK-' + id.slice(-4).toUpperCase()
             : 'TASK-' + String(index + 1).padStart(2, '0');
 
         return {
-            id                    : id,
-            taskName              : H.getString(record, F.TASK_NAME, ''),
-            projectDisplay        : H.getLookupDisplay(record, F.PROJECT),
-            projectId             : H.getLookupId(record, F.PROJECT),
-            requirementDisplay    : H.getLookupDisplay(record, F.REQUIREMENT),
-            requirementId         : H.getLookupId(record, F.REQUIREMENT),
-            description           : H.getString(record, F.DESCRIPTION, ''),
-            estimatedHours        : estHours,
-            status                : status,
-            statusClass           : statusClass,
-            priority              : priority,
-            priorityClass         : priorityClass,
-            owner                 : H.getLookupDisplay(record, F.OWNER)
-                                    || H.getString(record, F.OWNER, ''),
-            percent               : Math.min(100, Math.max(0, percent)),
-            rejectionReason       : H.getString(record, F.REJECTION_REASON, ''),
-            isNotStarted          : isNotStarted,
-            isStartApproval       : isStartApproval,
-            isInProgress          : isInProgress,
-            isCompleted           : isCompleted,
-            isCompletionApproved  : isCompletionApproved,
-            isRejected            : isRejected,
-            displayId             : displayId
+            id                          : id,
+            taskName                    : H.getString(record, F.TASK_NAME, ''),
+            projectDisplay              : H.getLookupDisplay(record, F.PROJECT),
+            projectId                   : H.getLookupId(record, F.PROJECT),
+            requirementDisplay          : H.getLookupDisplay(record, F.REQUIREMENT),
+            requirementId               : H.getLookupId(record, F.REQUIREMENT),
+            description                 : H.getString(record, F.DESCRIPTION, ''),
+            estimatedHours              : estHours,
+            status                      : status,
+            statusClass                 : statusClass,
+            priority                    : priority,
+            priorityClass               : priorityClass,
+            owner                       : H.getLookupDisplay(record, F.OWNER)
+                                            || H.getString(record, F.OWNER, ''),
+            percent                     : Math.min(100, Math.max(0, percent)),
+            rejectionReason             : H.getString(record, F.REJECTION_REASON, ''),
+            isDraft                     : isDraft,
+            isPendingApproval           : isPendingApproval,
+            isApproved                  : isApproved,
+            isCompleted                 : isCompleted,
+            isPendingCompletionApproval : isPendingCompletionApproval,
+            isReworkRequired            : isReworkRequired,
+            isClosed                    : isClosed,
+            displayId                   : displayId
         };
+    }
+
+    /**
+     * Map pre-migration statuses (Not Started, In Progress, …) to their
+     * equivalents in the current 7-status flow. Unknown values pass
+     * through untouched so new Zoho statuses still render.
+     */
+    function _normalizeStatus(rawStatus) {
+        if (!rawStatus) return '';
+        return CONSTANTS.STATUS.TASK_LEGACY[rawStatus] || rawStatus;
     }
 
     function _toDTOs(records) {
@@ -184,19 +208,29 @@ var TaskRepo = (function () {
     }
 
     async function getPending(userEmail) {
-        return getByStatus(userEmail, CONSTANTS.STATUS.TASK.NOT_STARTED);
+        // Client action needed: start approval + completion approval
+        var S = CONSTANTS.STATUS.TASK;
+        var all = await getForUser(userEmail);
+        return all.filter(function (t) {
+            return t.status === S.PENDING_APPROVAL
+                || t.status === S.PENDING_COMPLETION_APPROVAL;
+        });
     }
 
     async function getInProgress(userEmail) {
-        return getByStatus(userEmail, CONSTANTS.STATUS.TASK.IN_PROGRESS);
+        // Team-side: drafted, working, done (awaiting completion review), rework
+        var S = CONSTANTS.STATUS.TASK;
+        var all = await getForUser(userEmail);
+        return all.filter(function (t) {
+            return t.status === S.DRAFT
+                || t.status === S.APPROVED
+                || t.status === S.COMPLETED
+                || t.status === S.REWORK_REQUIRED;
+        });
     }
 
     async function getCompleted(userEmail) {
-        var all = await getForUser(userEmail);
-        return all.filter(function (t) {
-            return t.status === CONSTANTS.STATUS.TASK.COMPLETED
-                || t.status === CONSTANTS.STATUS.TASK.COMPLETION_APPROVED;
-        });
+        return getByStatus(userEmail, CONSTANTS.STATUS.TASK.CLOSED);
     }
 
     async function getSummary(userEmail) {
@@ -204,25 +238,38 @@ var TaskRepo = (function () {
         var S   = CONSTANTS.STATUS.TASK;
 
         var summary = {
-            total              : all.length,
-            notStarted         : 0,
-            startApproval      : 0,
-            inProgress         : 0,
-            completed          : 0,
-            completionApproved : 0,
-            rejected           : 0,
-            totalHours         : 0
+            total                      : all.length,
+            draft                      : 0,
+            pendingApproval            : 0,
+            approved                   : 0,
+            teamCompleted              : 0,   // "Completed" = team done, awaiting client sign-off
+            pendingCompletionApproval  : 0,
+            reworkRequired             : 0,
+            closed                     : 0,
+            totalHours                 : 0,
+            // Aggregated aliases for the UI
+            pending                    : 0,   // client action needed (PA + PCA)
+            inProgress                 : 0,   // team-side, not closed
+            completed                  : 0    // fully done (= Closed)
         };
 
         all.forEach(function (task) {
             summary.totalHours += task.estimatedHours || 0;
             switch (task.status) {
-                case S.NOT_STARTED         : summary.notStarted++;         break;
-                case S.START_APPROVAL      : summary.startApproval++;      break;
-                case S.IN_PROGRESS         : summary.inProgress++;         break;
-                case S.COMPLETED           : summary.completed++;          break;
-                case S.COMPLETION_APPROVED : summary.completionApproved++; break;
-                case S.TASK_REJECTED       : summary.rejected++;           break;
+                case S.DRAFT:
+                    summary.draft++;         summary.inProgress++; break;
+                case S.PENDING_APPROVAL:
+                    summary.pendingApproval++; summary.pending++; break;
+                case S.APPROVED:
+                    summary.approved++;      summary.inProgress++; break;
+                case S.COMPLETED:
+                    summary.teamCompleted++; summary.inProgress++; break;
+                case S.PENDING_COMPLETION_APPROVAL:
+                    summary.pendingCompletionApproval++; summary.pending++; break;
+                case S.REWORK_REQUIRED:
+                    summary.reworkRequired++; summary.inProgress++; break;
+                case S.CLOSED:
+                    summary.closed++;        summary.completed++; break;
             }
         });
 
@@ -235,7 +282,7 @@ var TaskRepo = (function () {
 
     /**
      * Level 1 — Client approves task to start.
-     * Not Started → Start Approval
+     * Pending Approval → Approved
      */
     async function approve(id, userEmail) {
         Logger.debug('REPO', 'TaskRepo.approve → ' + id);
@@ -245,7 +292,7 @@ var TaskRepo = (function () {
                 reportName      : CONSTANTS.REPORTS.PROPOSED_TASKS,
                 id              : id,
                 data            : {
-                    [F.STATUS]           : CONSTANTS.STATUS.TASK.START_APPROVAL,
+                    [F.STATUS]           : CONSTANTS.STATUS.TASK.APPROVED,
                     [F.REJECTION_REASON] : ''
                 },
                 invalidateCache : [
@@ -264,15 +311,15 @@ var TaskRepo = (function () {
     }
 
     /**
-     * Reject a task with reason.
-     * Can be called from Not Started, In Progress, or Completed.
-     * Any → Task Rejected
+     * Client requests rework with reason.
+     * Can be called from Pending Approval, Approved, or Pending
+     * Completion Approval. → Rework Required
      */
     async function reject(id, reason, userEmail) {
         Logger.debug('REPO', 'TaskRepo.reject → ' + id);
 
         if (!reason || !reason.trim()) {
-            throw new Error('Rejection reason is required');
+            throw new Error('Rework reason is required');
         }
 
         try {
@@ -280,7 +327,7 @@ var TaskRepo = (function () {
                 reportName      : CONSTANTS.REPORTS.PROPOSED_TASKS,
                 id              : id,
                 data            : {
-                    [F.STATUS]           : CONSTANTS.STATUS.TASK.TASK_REJECTED,
+                    [F.STATUS]           : CONSTANTS.STATUS.TASK.REWORK_REQUIRED,
                     [F.REJECTION_REASON] : reason.trim()
                 },
                 invalidateCache : [
@@ -300,17 +347,13 @@ var TaskRepo = (function () {
 
     /**
      * Level 2 — Client approves task completion.
-     * Completed → Completion Approved
-     * AND consumes estimated hours from support contract.
-     */
-    /**
-     * Approve a task's completion.
+     * Pending Completion Approval → Closed
      *
      * NOTE: This only updates the task STATUS. Consumed hours are NOT
      * incremented here — the state layer recomputes them via the
-     * waterfall (Completion Approved tasks fill the client's purchased
-     * packages oldest-first) and writes the per-contract Consumed_Hours
-     * back to Zoho. See state.js → _reconcileConsumedHours().
+     * waterfall (Closed tasks fill the client's purchased packages
+     * oldest-first) and writes the per-contract Consumed_Hours back to
+     * Zoho. See state.js → _reconcileConsumedHours().
      */
     async function approveCompletion(id, userEmail) {
         Logger.debug('REPO', 'TaskRepo.approveCompletion → ' + id);
@@ -320,7 +363,7 @@ var TaskRepo = (function () {
                 reportName      : CONSTANTS.REPORTS.PROPOSED_TASKS,
                 id              : id,
                 data            : {
-                    [F.STATUS]           : CONSTANTS.STATUS.TASK.COMPLETION_APPROVED,
+                    [F.STATUS]           : CONSTANTS.STATUS.TASK.CLOSED,
                     [F.REJECTION_REASON] : ''
                 },
                 invalidateCache : [
@@ -339,7 +382,7 @@ var TaskRepo = (function () {
     }
 
     /**
-     * Bulk approve — Not Started → Start Approval
+     * Bulk approve — multiple Pending Approval → Approved
      */
     async function bulkApprove(ids, userEmail) {
         if (!ids || ids.length === 0) return { success: 0, failed: 0 };
@@ -354,7 +397,7 @@ var TaskRepo = (function () {
                     reportName : CONSTANTS.REPORTS.PROPOSED_TASKS,
                     id         : ids[i],
                     data       : {
-                        [F.STATUS]: CONSTANTS.STATUS.TASK.START_APPROVAL
+                        [F.STATUS]: CONSTANTS.STATUS.TASK.APPROVED
                     }
                 });
                 results.success++;
