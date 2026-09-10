@@ -65,6 +65,14 @@ var TaskRepo = (function () {
         var isReworkRequired              = status === S.REWORK_REQUIRED;
         var isClosed                      = status === S.CLOSED;
 
+        // Task's own type (Support / Implementation). Empty when the
+        // field is blank on the record — consumers fall back to the
+        // requirement → contract → Contract_Type chain.
+        var CT       = CONSTANTS.STATUS.CONTRACT_TYPE;
+        var rawType  = H.getString(record, F.TASK_TYPE, '');
+        var taskType = (rawType === CT.IMPLEMENTATION || rawType === CT.SUPPORT)
+            ? rawType : '';
+
         var displayId = id
             ? 'TASK-' + id.slice(-4).toUpperCase()
             : 'TASK-' + String(index + 1).padStart(2, '0');
@@ -80,6 +88,7 @@ var TaskRepo = (function () {
             estimatedHours              : estHours,
             status                      : status,
             statusClass                 : statusClass,
+            taskType                    : taskType,
             priority                    : priority,
             priorityClass               : priorityClass,
             owner                       : H.getLookupDisplay(record, F.OWNER)

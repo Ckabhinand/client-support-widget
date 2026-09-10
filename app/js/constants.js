@@ -95,6 +95,7 @@ var CONSTANTS = (function () {
             PRIORITY         : 'Priority',
             OWNER            : 'Owner',
             PERCENT          : 'Percent',
+            TASK_TYPE        : 'Task_Type',
             REJECTION_REASON : 'Rejection_Reason'
         },
 

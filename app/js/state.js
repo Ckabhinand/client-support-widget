@@ -788,8 +788,10 @@ var AppState = (function () {
     //
     // Recomputes every purchased contract's Consumed_Hours from the
     // client's Closed tasks:
-    //   1. Each approved task's type is resolved via its requirement →
-    //      contract → Contract_Type (defaults to Support).
+    //   1. Each approved task's type comes from its OWN Task_Type field
+    //      (Support / Implementation). When the field is blank it falls
+    //      back to the requirement → contract → Contract_Type chain
+    //      (defaults to Support).
     //   2. Per type, the total approved task hours waterfall through the
     //      purchased packages OLDEST FIRST: fill each up to its purchased
     //      amount, overflow rolls to the next, and the NEWEST package
@@ -828,8 +830,13 @@ var AppState = (function () {
 
         (_state.tasks.list || []).forEach(function (t) {
             if (t.status !== S.CLOSED) return;
-            var cid  = reqContract[t.requirementId];
-            var type = (cid && typeById[cid]) || CT.SUPPORT;
+            // Task's own Task_Type wins; blank falls back to the
+            // requirement → contract → Contract_Type chain.
+            var type = t.taskType;
+            if (type !== CT.SUPPORT && type !== CT.IMPLEMENTATION) {
+                var cid = reqContract[t.requirementId];
+                type = (cid && typeById[cid]) || CT.SUPPORT;
+            }
             totals[type] += (t.estimatedHours || 0);
         });
 
