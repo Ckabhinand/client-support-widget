@@ -972,10 +972,19 @@ var PricingModule = (function () {
       }
     } catch (err) {
       Logger.error("PRICING", "processCheckout failed", err);
+      // Raw Zoho error response in the browser console for debugging
+      // (err.response is attached by SdkService.addRecord when the SDK
+      // resolves with an error payload).
+      console.error(
+        "❌ [PRICING] Checkout failed while adding the Support_Contract:",
+        err && err.response ? err.response : err
+      );
       _hidePaymentWaitingUI();
       showToast(
         "Checkout Failed",
-        "Could not process your order. Please try again.",
+        err && err.message
+          ? "Could not create your order: " + err.message
+          : "Could not process your order. Please try again.",
       );
     } finally {
       _setBtn('<i class="fa-solid fa-lock"></i> Proceed to Payment', false);

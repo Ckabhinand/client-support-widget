@@ -103,6 +103,14 @@ MOCK = '''
             },
             getRecordCount: function () { return Promise.resolve({ count: 0 }); },
             addRecords: function (cfg) {
+              // Test hook: window.__failNextAdd = { code: 3001, message: '...' }
+              // makes the NEXT addRecords resolve with a Zoho-style error
+              // payload (the SDK resolves instead of throwing on failures).
+              if (window.__failNextAdd) {
+                var failure = window.__failNextAdd;
+                window.__failNextAdd = null;
+                return Promise.resolve(failure);
+              }
               // Form names differ from report names — map so created
               // records land in the bucket the app reads from.
               var FORM_TO_REPORT = {

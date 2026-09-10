@@ -460,6 +460,15 @@ var ContractRepo = (function () {
       Logger.info("REPO", "ContractRepo.create ✅ → ID: " + newId);
       return newId;
     } catch (err) {
+      // Full diagnostics in the browser console: the payload that was
+      // sent + Zoho's raw error response (err.response when the SDK
+      // resolved with an error payload instead of throwing).
+      console.error(
+        "❌ [REPO] Support_Contract ADD FAILED — payload:",
+        data,
+        "\n   Zoho error response:",
+        err && err.response ? err.response : err
+      );
       Logger.error("REPO", "ContractRepo.create FAILED", err);
       throw err;
     }

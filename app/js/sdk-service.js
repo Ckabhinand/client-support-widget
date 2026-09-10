@@ -763,6 +763,49 @@ var SdkService = (function () {
                 newId = response.ID;
             }
 
+            // ── Failure detection ──
+            // The Creator SDK does NOT always throw on failure — it often
+            // RESOLVES with an error payload ({code: 3001, message: "..."}).
+            // Zoho's success code is 3000; a missing new-record ID is also
+            // a failure. Detect both and surface the raw response loudly.
+            var zohoCode;
+            if (response && Array.isArray(response.data) && response.data[0]) {
+                zohoCode = response.data[0].code;
+            } else if (response && response.data && response.data.code) {
+                zohoCode = response.data.code;
+            } else if (response && response.code) {
+                zohoCode = response.code;
+            }
+            var failed = !newId || (zohoCode !== undefined && zohoCode !== 3000);
+
+            if (failed) {
+                var errMsg = (response && (response.message
+                            || (response.data && response.data.message)
+                            || (Array.isArray(response.data) && response.data[0] && response.data[0].message)))
+                            || 'Add record failed (no record ID returned)';
+                var addErr = {
+                    __normalized : true,
+                    code         : zohoCode || 0,
+                    message      : errMsg,
+                    formName     : formName,
+                    response     : response,
+                    raw          : response
+                };
+
+                // Always visible in the browser console — regardless of the
+                // configured log level — so failed submissions can be
+                // debugged straight from DevTools.
+                console.error(
+                    '❌ [SDK] addRecord FAILED → ' + formName +
+                    ' (code: ' + (zohoCode || 'none') + '):',
+                    response
+                );
+                Logger.error('SDK', 'addRecord FAILED → ' + formName +
+                    ' → ' + errMsg, response);
+
+                throw addErr;
+            }
+
             Logger.timeEnd('SDK', 'addRecord:' + formName);
             Logger.info('SDK', 'addRecord ✅ ' + formName + ' → ID: ' + newId);
 
@@ -775,6 +818,14 @@ var SdkService = (function () {
 
         } catch (err) {
             Logger.timeEnd('SDK', 'addRecord:' + formName);
+            if (!err || !err.__normalized) {
+                // Thrown errors (network / SDK exceptions) — log the full
+                // raw error object so nothing is swallowed silently.
+                console.error(
+                    '❌ [SDK] addRecord THREW → ' + formName + ':',
+                    err
+                );
+            }
             var normalized = _normalizeError(err);
             Logger.error('SDK', 'addRecord FAILED → ' + formName, normalized);
             throw normalized;
