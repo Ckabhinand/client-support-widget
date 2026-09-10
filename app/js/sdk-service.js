@@ -129,7 +129,9 @@ var SdkService = (function () {
         if (!val || typeof val !== 'object') return null;
         return {
             id      : val.ID || val.id || '',
-            display : val.zc_display_value || ''
+            // Handle raw SDK format (zc_display_value) AND already-
+            // normalized lookups ({display}) — e.g. multi-select arrays.
+            display : val.zc_display_value || val.display || ''
         };
     }
 
@@ -286,6 +288,69 @@ var SdkService = (function () {
         // Raw SDK format
         if (val.ID !== undefined) return val.ID || '';
         return '';
+    }
+
+    /**
+     * Safely get ALL values of a lookup field — works for single-select
+     * AND multi-select lookup fields.
+     *
+     * Handles every shape the SDK may return:
+     * - Array of normalized lookups   [{display, id}, ...]
+     * - Array of raw SDK lookups      [{zc_display_value, ID}, ...]
+     * - Array of plain values         ["Project A", "Project B"]
+     * - Comma-separated display string "Project A,Project B"
+     * - Legacy single lookup object   {display, id}
+     *
+     * @param {Object} record
+     * @param {string} fieldName
+     * @returns {Array<{display: string, id: string}>}
+     */
+    function _getLookupValues(record, fieldName) {
+        var val = record ? record[fieldName] : null;
+        if (val === null || val === undefined || val === '') return [];
+
+        var out = [];
+
+        var pushOne = function (v) {
+            if (v === null || v === undefined || v === '') return;
+            if (typeof v === 'object') {
+                var display = v.display !== undefined ? v.display
+                            : v.zc_display_value !== undefined ? v.zc_display_value
+                            : '';
+                var id = v.id !== undefined ? v.id
+                       : v.ID !== undefined ? v.ID
+                       : '';
+                if (display !== '' || id !== '') {
+                    out.push({ display: String(display || id), id: String(id || '') });
+                }
+                return;
+            }
+            var s = String(v);
+            // Comma-separated display values (multi-select string form)
+            if (s.indexOf(',') !== -1) {
+                s.split(',').forEach(function (part) {
+                    part = part.trim();
+                    if (part !== '') out.push({ display: part, id: '' });
+                });
+            } else {
+                out.push({ display: s, id: '' });
+            }
+        };
+
+        if (Array.isArray(val)) {
+            val.forEach(pushOne);
+        } else {
+            pushOne(val);
+        }
+
+        // Deduplicate by id (or display when id is missing)
+        var seen = {};
+        return out.filter(function (v) {
+            var key = v.id !== '' ? v.id : v.display;
+            if (seen[key]) return false;
+            seen[key] = true;
+            return true;
+        });
     }
 
     // =========================================================================
@@ -944,6 +1009,7 @@ var SdkService = (function () {
             getInt          : _getInt,
             getLookupDisplay: _getLookupDisplay,
             getLookupId     : _getLookupId,
+            getLookupValues : _getLookupValues,
             normalizeLookup : _normalizeLookup,
             normalizeRecord : _normalizeRecord
         }

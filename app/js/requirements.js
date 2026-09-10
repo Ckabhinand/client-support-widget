@@ -230,17 +230,26 @@ var RequirementsModule = (function () {
 
         if (!projectSel) return;
 
+        // ── List EVERY project from ALL purchased contracts ──
+        // (Support_Contract.Project is a multi-select lookup — one
+        //  package can cover several projects.)
         var seen = {};
         var projects = [];
         contracts.forEach(function (c) {
-            if (c.projectDisplay && !seen[c.projectDisplay]) {
-                seen[c.projectDisplay] = true;
+            var list = (c.projects && c.projects.length)
+                ? c.projects
+                : [{ id: c.projectId, display: c.projectDisplay }];
+
+            list.forEach(function (p) {
+                var key = p.id || p.display;
+                if (!key || seen[key]) return;
+                seen[key] = true;
                 projects.push({
-                    name: c.projectDisplay,
-                    projectId: c.projectId,
+                    name: p.display,
+                    projectId: p.id,
                     contractId: c.id
                 });
-            }
+            });
         });
 
         projectSel.innerHTML = '<option value="">Select a project...</option>'
@@ -279,6 +288,15 @@ var RequirementsModule = (function () {
             return c.id === contractId;
         });
 
+        // ── Resolve the exact project the user selected ──
+        // (A contract can cover multiple projects — the chosen project
+        //  ID is stored on the option's data-project-id attribute.)
+        var selectedProjectId = '';
+        if (projectSel && projectSel.selectedIndex >= 0) {
+            var opt = projectSel.options[projectSel.selectedIndex];
+            selectedProjectId = (opt && opt.getAttribute('data-project-id')) || '';
+        }
+
         var today = new Date();
         var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
         var todayStr = String(today.getDate()).padStart(2, '0')
@@ -295,7 +313,8 @@ var RequirementsModule = (function () {
         payload[F.STATUS]              = CONSTANTS.STATUS.REQUIREMENT.SUBMITTED;
 
         if (contract) {
-            if (contract.projectId) payload[F.PROJECT] = contract.projectId;
+            var projectId = selectedProjectId || contract.projectId;
+            if (projectId) payload[F.PROJECT] = projectId;
             if (contract.clientId)  payload[F.CLIENT]  = contract.clientId;
         }
 

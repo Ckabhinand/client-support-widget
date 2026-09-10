@@ -633,7 +633,8 @@ var PricingModule = (function () {
     try {
       var existing = await ContractRepo.findExistingContract({
         userEmail: user.email,
-        projectId: activeContract.projectId,
+        projectId: (activeContract.projectIds && activeContract.projectIds[0])
+          || activeContract.projectId,
         currency: _currentCurrency,
         contractType: _currentType,
       });
@@ -858,8 +859,13 @@ var PricingModule = (function () {
         payload[F.CLIENT] = activeContract.clientId;
         payload[F.EMAIL] = activeContract.clientId;
       }
-      if (activeContract.projectId) {
-        payload[F.PROJECT] = activeContract.projectId;
+      // Project is a multi-select lookup — carry over ALL of the
+      // existing contract's projects (comma-separated IDs for Zoho).
+      var projectIds = (activeContract.projectIds && activeContract.projectIds.length)
+        ? activeContract.projectIds
+        : (activeContract.projectId ? [activeContract.projectId] : []);
+      if (projectIds.length) {
+        payload[F.PROJECT] = projectIds.join(",");
       }
 
       Logger.info("PRICING", "Creating contract", payload);

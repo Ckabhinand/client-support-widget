@@ -62,23 +62,29 @@ var BugReportModule = (function () {
             return;
         }
 
-        // Deduplicate by projectDisplay — user picks a PROJECT, the first
-        // active contract for that project is used for the backend payload.
+        // ── Deduplicate by PROJECT — list every project from every
+        // purchased contract (Project is a multi-select lookup, so one
+        // contract can contribute several projects). The first active
+        // contract containing that project is used for the payload. ──
         var seen = {};
         var projects = [];
         contracts.forEach(function (c) {
-            var key = c.projectDisplay || c.projectId || c.id;
-            if (!seen[key]) {
+            var list = (c.projects && c.projects.length)
+                ? c.projects
+                : [{ id: c.projectId, display: c.projectDisplay }];
+
+            list.forEach(function (p) {
+                var key = p.id || p.display;
+                if (!key || seen[key]) return;
                 seen[key] = true;
-                projects.push(c);
-            }
+                projects.push({ contract: c, label: p.display });
+            });
         });
 
         select.innerHTML = '<option value="">Select a project...</option>'
-            + projects.map(function (c) {
-                var label = c.projectDisplay || 'Project';
-                return '<option value="' + _escapeHtml(c.id) + '">'
-                    + _escapeHtml(label)
+            + projects.map(function (p) {
+                return '<option value="' + _escapeHtml(p.contract.id) + '">'
+                    + _escapeHtml(p.label || 'Project')
                     + '</option>';
             }).join('');
 
@@ -117,11 +123,17 @@ var BugReportModule = (function () {
         var projInfoEl   = _el(CONSTANTS.DOM.BUG_PROJECT_INFO);
         var clientInfoEl = _el(CONSTANTS.DOM.BUG_CLIENT_INFO);
 
+        // The option's label is the specific project name the user picked
+        // (a contract can cover multiple projects).
+        var selectedLabel = select.options[select.selectedIndex]
+            ? select.options[select.selectedIndex].text
+            : '';
+
         if (projInfoEl) {
             projInfoEl.innerHTML =
                 '<i class="fa-solid fa-folder" style="color:var(--primary); margin-right:6px;"></i>'
                 + '<strong>Project:</strong> '
-                + _escapeHtml(contract.projectDisplay || '—');
+                + _escapeHtml(selectedLabel || contract.projectDisplay || '—');
         }
 
         if (clientInfoEl) {

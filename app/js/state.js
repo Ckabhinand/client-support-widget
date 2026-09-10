@@ -354,8 +354,10 @@ var AppState = (function () {
                 rejectionReason : ''
             });
 
-            // Refresh contracts to update hours banner
+            // Refresh stored contract values, then recompute the consumed
+            // hours waterfall (this task's hours now count as consumed).
             await _handleRefreshContracts();
+            await _reconcileConsumedHours();
 
             _emit('task:completionApproved', { taskId: taskId });
             _emit('tasks:loaded', _state.tasks);
@@ -437,6 +439,10 @@ var AppState = (function () {
 
             _setLoading(false, 'tasks');
             _emit('tasks:loaded', _state.tasks);
+
+            // Task statuses may have changed (e.g. Completion Approved by
+            // the team) → recompute the consumed-hours waterfall.
+            await _reconcileConsumedHours();
 
         } catch (err) {
             _setLoading(false, 'tasks');
@@ -627,6 +633,10 @@ var AppState = (function () {
 
             _buildTimelineProjects();
 
+            // ── Reconcile consumed hours from Completion Approved tasks ──
+            // (fetch → check approval status → waterfall → write back drift)
+            await _reconcileConsumedHours();
+
             Logger.timeEnd('STATE', 'bootstrap');
             Logger.separator('BOOTSTRAP COMPLETE');
 
@@ -669,22 +679,30 @@ var AppState = (function () {
 
         var projectMap = {};
 
+        // A contract can cover MULTIPLE projects (multi-select lookup) —
+        // it contributes its hours to each of its projects' groups.
         activeContracts.forEach(function (contract) {
-            var pid = contract.projectId || 'unknown';
-            var pn  = contract.projectDisplay || 'Unknown Project';
+            var projs = (contract.projects && contract.projects.length)
+                ? contract.projects
+                : [{ id: contract.projectId, display: contract.projectDisplay }];
 
-            if (!projectMap[pid]) {
-                projectMap[pid] = {
-                    projectId: pid, projectName: pn, contracts: [],
-                    totalPurchased: 0, totalConsumed: 0, totalRemaining: 0
-                };
-            }
+            projs.forEach(function (p) {
+                var pid = p.id || 'unknown';
+                var pn  = p.display || 'Unknown Project';
 
-            var g = projectMap[pid];
-            g.contracts.push(contract);
-            g.totalPurchased += contract.purchasedHours || 0;
-            g.totalConsumed  += contract.consumedHours  || 0;
-            g.totalRemaining += contract.remainingHours || 0;
+                if (!projectMap[pid]) {
+                    projectMap[pid] = {
+                        projectId: pid, projectName: pn, contracts: [],
+                        totalPurchased: 0, totalConsumed: 0, totalRemaining: 0
+                    };
+                }
+
+                var g = projectMap[pid];
+                if (g.contracts.indexOf(contract) === -1) g.contracts.push(contract);
+                g.totalPurchased += contract.purchasedHours || 0;
+                g.totalConsumed  += contract.consumedHours  || 0;
+                g.totalRemaining += contract.remainingHours || 0;
+            });
         });
 
         var uniqueProjects  = Object.values(projectMap);
@@ -744,6 +762,114 @@ var AppState = (function () {
     function _getPhaseClass(req) {
         if (!req) return 'badge-gray';
         return CONSTANTS.REQ_STATUS_BADGE[req.status] || 'badge-gray';
+    }
+
+    // =========================================================================
+    // CONSUMED HOURS RECONCILIATION (waterfall)
+    //
+    // Recomputes every purchased contract's Consumed_Hours from the
+    // client's Completion Approved tasks:
+    //   1. Each approved task's type is resolved via its requirement →
+    //      contract → Contract_Type (defaults to Support).
+    //   2. Per type, the total approved task hours waterfall through the
+    //      purchased packages OLDEST FIRST: fill each up to its purchased
+    //      amount, overflow rolls to the next, and the NEWEST package
+    //      absorbs any excess (consumed may exceed purchased → the
+    //      "Hours Limit Exceeded" alert fires).
+    //   3. Contracts whose computed value differs from the stored one are
+    //      written back to Zoho, then the local summary is rebuilt.
+    //
+    // Runs on: widget load (bootstrap), task refresh, completion approval.
+    // =========================================================================
+
+    async function _reconcileConsumedHours() {
+        var contracts = _state.contracts.list || [];
+        var purchased = contracts.filter(function (c) {
+            return c.isActive && c.isPaid;
+        });
+        if (purchased.length === 0) return;
+
+        var S  = CONSTANTS.STATUS.TASK;
+        var CT = CONSTANTS.STATUS.CONTRACT_TYPE;
+
+        // ── Map requirementId → contractId, contractId → type ──
+        var reqContract = {};
+        (_state.requirements.list || []).forEach(function (r) {
+            if (r.id && r.contractId) reqContract[r.id] = r.contractId;
+        });
+        var typeById = {};
+        contracts.forEach(function (c) {
+            typeById[c.id] = c.isImplementation ? CT.IMPLEMENTATION : CT.SUPPORT;
+        });
+
+        // ── Total approved task hours per contract type ──
+        var totals = {};
+        totals[CT.SUPPORT] = 0;
+        totals[CT.IMPLEMENTATION] = 0;
+
+        (_state.tasks.list || []).forEach(function (t) {
+            if (t.status !== S.COMPLETION_APPROVED) return;
+            var cid  = reqContract[t.requirementId];
+            var type = (cid && typeById[cid]) || CT.SUPPORT;
+            totals[type] += (t.estimatedHours || 0);
+        });
+
+        Logger.info('STATE', 'Reconcile: approved hours → '
+            + CT.SUPPORT + ': ' + totals[CT.SUPPORT] + 'h, '
+            + CT.IMPLEMENTATION + ': ' + totals[CT.IMPLEMENTATION] + 'h');
+
+        // ── Waterfall allocation per type ──
+        var computed = {};
+        [CT.SUPPORT, CT.IMPLEMENTATION].forEach(function (type) {
+            var pool = purchased.filter(function (c) {
+                return typeById[c.id] === type;
+            });
+            var alloc = ContractRepo.allocateConsumedHours(pool, totals[type]);
+            Object.keys(alloc).forEach(function (id) {
+                computed[id] = alloc[id];
+            });
+        });
+
+        // ── Write back only where computed ≠ stored ──
+        var changed = purchased.filter(function (c) {
+            return computed[c.id] !== undefined
+                && computed[c.id] !== (c.consumedHours || 0);
+        });
+
+        if (changed.length === 0) {
+            Logger.debug('STATE', 'Reconcile: no drift, nothing to write');
+            return;
+        }
+
+        Logger.info('STATE', 'Reconcile: ' + changed.length
+            + ' contract(s) drift detected → writing back');
+
+        for (var i = 0; i < changed.length; i++) {
+            var c      = changed[i];
+            var newVal = computed[c.id];
+
+            try {
+                await ContractRepo.updateConsumedHours(c.id, newVal);
+            } catch (err) {
+                // Write-back failure must not block the UI — the computed
+                // value is still applied locally as the canonical number.
+                Logger.error('STATE', 'Reconcile write-back failed → ' + c.id, err);
+            }
+
+            c.consumedHours = newVal;
+            c.remainingHours = Math.max(0, (c.purchasedHours || 0) - newVal);
+            c.usagePercent = c.purchasedHours > 0
+                ? Math.round((newVal / c.purchasedHours) * 100)
+                : 0;
+        }
+
+        _state.contracts.hoursSummary = ContractRepo.buildHoursSummary(
+            _state.contracts.list.filter(function (c) {
+                return c.isActive && c.isPaid;
+            })
+        );
+        _buildTimelineProjects();
+        _emit('hours:updated', _state.contracts.hoursSummary);
     }
 
     // =========================================================================

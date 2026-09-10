@@ -101,48 +101,6 @@ var TaskRepo = (function () {
     // PRIVATE — Hours Consumption Chain
     // =========================================================================
 
-    /**
-     * Resolve Support Contract ID through the chain:
-     * Task → Requirement → Support Contract
-     */
-    async function _resolveContractId(taskId, userEmail) {
-        if (!taskId) return null;
-
-        try {
-            var userTasks = await getForUser(userEmail);
-            var task = userTasks.find(function (t) { return t.id === taskId; });
-
-            if (!task) {
-                Logger.warn('REPO', '_resolveContractId → task not found: ' + taskId);
-                return null;
-            }
-
-            if (!task.requirementId) {
-                Logger.warn('REPO', '_resolveContractId → no requirementId on task: ' + taskId);
-                return null;
-            }
-
-            var requirement = await RequirementRepo.getById(task.requirementId);
-
-            if (!requirement) {
-                Logger.warn('REPO', '_resolveContractId → requirement not found: ' + task.requirementId);
-                return null;
-            }
-
-            if (!requirement.contractId) {
-                Logger.warn('REPO', '_resolveContractId → no contractId on requirement: ' + task.requirementId);
-                return null;
-            }
-
-            Logger.debug('REPO', '_resolveContractId ✅ → contractId: ' + requirement.contractId);
-            return requirement.contractId;
-
-        } catch (err) {
-            Logger.error('REPO', '_resolveContractId FAILED → ' + taskId, err);
-            return null;
-        }
-    }
-
     // =========================================================================
     // PUBLIC — Read Methods
     // =========================================================================
@@ -345,34 +303,19 @@ var TaskRepo = (function () {
      * Completed → Completion Approved
      * AND consumes estimated hours from support contract.
      */
+    /**
+     * Approve a task's completion.
+     *
+     * NOTE: This only updates the task STATUS. Consumed hours are NOT
+     * incremented here — the state layer recomputes them via the
+     * waterfall (Completion Approved tasks fill the client's purchased
+     * packages oldest-first) and writes the per-contract Consumed_Hours
+     * back to Zoho. See state.js → _reconcileConsumedHours().
+     */
     async function approveCompletion(id, userEmail) {
         Logger.debug('REPO', 'TaskRepo.approveCompletion → ' + id);
 
         try {
-            // ── Step 1: Get task to read estimatedHours ──
-            var userTasks = await getForUser(userEmail);
-            var task = userTasks.find(function (t) { return t.id === id; });
-
-            if (!task) {
-                throw new Error('Task not found: ' + id);
-            }
-
-            var estimatedHours = task.estimatedHours || 0;
-
-            Logger.info('REPO', 'TaskRepo.approveCompletion → hours: ' + estimatedHours);
-
-            // ── Step 2: Resolve contract ID ──
-            var contractId = await _resolveContractId(id, userEmail);
-
-            if (!contractId) {
-                Logger.warn('REPO', 'TaskRepo.approveCompletion → contract not resolved, skipping hours update');
-            } else {
-                // ── Step 3: Consume hours ──
-                await ContractRepo.incrementConsumedHours(contractId, estimatedHours);
-                Logger.info('REPO', 'TaskRepo.approveCompletion → ' + estimatedHours + ' hours consumed');
-            }
-
-            // ── Step 4: Update task status ──
             await SdkService.updateRecord({
                 reportName      : CONSTANTS.REPORTS.PROPOSED_TASKS,
                 id              : id,

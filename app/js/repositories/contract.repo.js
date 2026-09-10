@@ -46,6 +46,11 @@ var ContractRepo = (function () {
    *   usagePercent    : number,   // Computed: consumed / purchased * 100
    *   status          : string,   // 'Active' | 'Inactive'
    *   contractType    : string,   // 'Support' | 'Implementation'
+   *   projects        : Array,    // [{id, display}] — multi-select lookup
+   *   projectIds      : Array,    // All project IDs
+   *   projectDisplays : Array,    // All project display names
+   *   projectDisplay  : string,   // Legacy: all names joined with ", "
+   *   projectId       : string,   // Legacy: first project ID
    *   isActive        : boolean
    * }
    */
@@ -69,12 +74,26 @@ var ContractRepo = (function () {
     var paymentStatus = H.getString(record, F.PAYMENT_STATUS, "");
     var isPaid = paymentStatus === CONSTANTS.STATUS.PAYMENT.CAPTURED;
 
+    // ── Project — multi-select lookup: one package can cover many projects ──
+    var projects = H.getLookupValues(record, F.PROJECT).map(function (p) {
+      return { id: p.id, display: p.display };
+    });
+    var projectIds = projects
+      .map(function (p) { return p.id; })
+      .filter(function (id) { return id !== ""; });
+    var projectDisplays = projects
+      .map(function (p) { return p.display; })
+      .filter(function (name) { return name !== ""; });
+
     return {
       id: H.getString(record, "ID", ""),
       clientDisplay: H.getLookupDisplay(record, F.CLIENT),
       clientId: H.getLookupId(record, F.CLIENT),
-      projectDisplay: H.getLookupDisplay(record, F.PROJECT),
-      projectId: H.getLookupId(record, F.PROJECT),
+      projects: projects,
+      projectIds: projectIds,
+      projectDisplays: projectDisplays,
+      projectDisplay: projectDisplays.join(", "),
+      projectId: projectIds[0] || "",
       email: H.getLookupDisplay(record, F.EMAIL),
       currency: H.getString(record, F.CURRENCY, "USD"),
       planDisplay: H.getLookupDisplay(record, F.SUPPORT_PLAN),
@@ -276,13 +295,23 @@ var ContractRepo = (function () {
     };
   }
 
-  async function getHoursSummary(userEmail) {
-    var active = await getActive(userEmail);
+  /**
+   * PURE — Build the overall + per-type hours summary from a list of
+   * ACTIVE (purchased) contracts. Used by getHoursSummary and by the
+   * in-place rebuild after consumed-hours reconciliation.
+   *
+   * @param {Array} activeContracts — active + paid contract DTOs
+   * @returns {Object} hours summary
+   */
+  function buildHoursSummary(activeContracts) {
+    var active = activeContracts || [];
 
     var totalPurchased = 0;
     var totalConsumed = 0;
 
     // ── Group contracts by project for richer info ──
+    // A contract can cover MULTIPLE projects (multi-select lookup) —
+    // it contributes to each of its projects' groups.
     var contractsByProject = {};
     var uniqueProjects = [];
 
@@ -299,12 +328,18 @@ var ContractRepo = (function () {
         supportContracts.push(c);
       }
 
-      var projName = c.projectDisplay || "Unknown Project";
-      if (!contractsByProject[projName]) {
-        contractsByProject[projName] = [];
-        uniqueProjects.push(projName);
-      }
-      contractsByProject[projName].push(c);
+      var names = (c.projectDisplays && c.projectDisplays.length)
+        ? c.projectDisplays
+        : [c.projectDisplay || "Unknown Project"];
+      names.forEach(function (projName) {
+        if (!contractsByProject[projName]) {
+          contractsByProject[projName] = [];
+          uniqueProjects.push(projName);
+        }
+        if (contractsByProject[projName].indexOf(c) === -1) {
+          contractsByProject[projName].push(c);
+        }
+      });
     });
 
     var totalRemaining = Math.max(0, totalPurchased - totalConsumed);
@@ -338,6 +373,69 @@ var ContractRepo = (function () {
       support: supportSummary,
       implementation: implementationSummary,
     };
+  }
+
+  async function getHoursSummary(userEmail) {
+    var active = await getActive(userEmail);
+    return buildHoursSummary(active);
+  }
+
+  /**
+   * Parse a "dd-MMM-yyyy" date string (e.g. "12-Jun-2026") to a timestamp.
+   * Invalid / missing dates return Infinity so they sort LAST (newest).
+   * @param {string} s
+   * @returns {number}
+   */
+  function _parsePurchaseDate(s) {
+    if (!s) return Infinity;
+    var m = String(s).trim().match(/^(\d{1,2})[-\s\/]([A-Za-z]{3})[-\s\/](\d{2,4})/);
+    if (m) {
+      var MONTHS = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+                     Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+      var mon = MONTHS[m[2].charAt(0).toUpperCase() + m[2].slice(1).toLowerCase()];
+      if (mon !== undefined) {
+        var year = parseInt(m[3], 10);
+        if (year < 100) year += 2000;
+        return new Date(year, mon, parseInt(m[1], 10)).getTime();
+      }
+    }
+    var t = Date.parse(s);
+    return isNaN(t) ? Infinity : t;
+  }
+
+  /**
+   * PURE — Waterfall allocation of consumed hours across purchased
+   * contracts, oldest purchase first:
+   *   1. Approved task hours fill the OLDEST package up to its purchased
+   *      amount.
+   *   2. Overflow rolls forward to the next package, and so on.
+   *   3. The LAST (newest) package absorbs any remaining overflow, so
+   *      consumed can exceed purchased there → "Hours Limit Exceeded".
+   *
+   * @param {Array} contracts — active + paid contracts of ONE type
+   * @param {number} totalHours — total approved task hours for that type
+   * @returns {Object} map of contractId → computed consumedHours
+   */
+  function allocateConsumedHours(contracts, totalHours) {
+    var pool = (contracts || []).slice().sort(function (a, b) {
+      return _parsePurchaseDate(a.purchaseDate) - _parsePurchaseDate(b.purchaseDate);
+    });
+
+    var result = {};
+    var remaining = Math.max(0, totalHours || 0);
+
+    pool.forEach(function (c, i) {
+      var isLast = i === pool.length - 1;
+      var take = isLast
+        ? remaining
+        : Math.min(remaining, c.purchasedHours || 0);
+      if (take < 0) take = 0;
+
+      result[c.id] = take;
+      remaining -= take;
+    });
+
+    return result;
   }
   /**
    * Create a new Support Contract
@@ -488,8 +586,13 @@ async function incrementConsumedHours(id, additionalHours) {
       var allContracts = await getActive(userEmail);
 
       // Find matching project + currency + (optional) contract type
+      // Project is a multi-select lookup — match if ANY of the
+      // contract's projects is the requested project.
       var match = allContracts.find(function (c) {
-        var sameProject = c.projectId === projectId;
+        var cProjectIds = (c.projectIds && c.projectIds.length)
+          ? c.projectIds
+          : (c.projectId ? [c.projectId] : []);
+        var sameProject = cProjectIds.indexOf(projectId) !== -1;
         var sameCurrency = !currency || c.currency === currency;
         var sameType = !contractType || c.contractType === contractType;
         return sameProject && sameCurrency && sameType;
@@ -769,6 +872,8 @@ async function incrementConsumedHours(id, additionalHours) {
     getForContractsPage: getForContractsPage,
     getPendingPayment: getPendingPayment,
     getHoursSummary: getHoursSummary,
+    buildHoursSummary: buildHoursSummary,
+    allocateConsumedHours: allocateConsumedHours,
     findExistingContract: findExistingContract,
     addHoursToContract: addHoursToContract,
     create: create,
